@@ -1,4 +1,5 @@
-# Quay-Dez
+# Quẩy Đêz
+##### An Easy to Use Browser Based Party VJ Playground
 
 ## Project Overview
 
