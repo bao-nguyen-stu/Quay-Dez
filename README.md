@@ -6,6 +6,7 @@ In Vietnamese culture, music is the heartbeat of every milestone, from birthdays
 
 Inspired by Vietnamese quẩy culture, Quẩy Đêz is a web-based, interactive celebration platform designed to bridge that gap, transforming any browser into an accessible, high-energy party stage for friends and family.
 
+
 ## Technical Exploration
 
 ### Audio-Reactive Generative Visuals
@@ -20,6 +21,7 @@ Frame-by-frame patch template matching with smoothing and tilt control to dynami
 
 Interactive performance controls (decks, pads, keys 1–5) and a mirrored second-screen layout designed for real-time live audience sets.
 
+
 ## Target Audiences
 
 - Students and Young Adults: Friends celebrating birthdays, graduations, and milestones.
@@ -27,6 +29,7 @@ Interactive performance controls (decks, pads, keys 1–5) and a mirrored second
 - Families and Kids: Relatives of all ages, including young children who can easily play and tap along thanks to the intuitive, accessible controls.
 
 - Party Enthusiasts: Anyone wanting a fun, browser-based way to mix music and visuals without needing professional VJ software.
+
 
 ## Future Improvements
 
