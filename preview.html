@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quẩy Đêz // An Easy to Use Browser Based Party VJ Playground</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bungee&family=Comic+Neue:wght@700&family=Orbitron:wght@900&family=UnifrakturMaguntia&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/meme-overlay.css" />
+  <link rel="stylesheet" href="css/preview.css" />
+</head>
+<body>
+  <div id="previewFlashWarning" class="flash-warning-banner">
+    <span>⚠️</span>
+    <span><strong>Flash Warning:</strong> Contains strobe &amp; flashing visuals that may affect photosensitive viewers.</span>
+    <button id="dismissPreviewWarning">OK</button>
+  </div>
+
+  <div id="waitingMsg">Waiting for the VJ stage…</div>
+
+  <div id="previewStage">
+    <canvas id="projCanvas"></canvas>
+    <div id="memeStageOverlayLayer">
+      <div class="meme-banner-wrapper" id="meme-banner-wrapper">
+        <div id="meme-text-display" class="style-rainbow anim-wave"></div>
+      </div>
+      <div class="stage-scale-wrapper" id="stage-scale-wrapper">
+        <div class="tracker-stage" id="tracker-stage">
+          <canvas id="tracker-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/preview.js"></script>
+</body>
+</html>
