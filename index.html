@@ -1,1971 +1,636 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Brainrot Dance Studio — AI & Motion Tracking</title>
-  <!-- TensorFlow.js & BlazeFace for AI Face Tracking across GIF/Video Frames -->
+  <title>Quẩy Đêz // An Easy to Use Browser Based Party VJ Playground</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bungee&family=Comic+Neue:wght@700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@900&family=UnifrakturMaguntia&display=swap" rel="stylesheet" />
+
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.1.0/dist/blazeface.min.js"></script>
-  <!-- Google Fonts for Old-School Goth, Comic, & Cheesy WordArt Styles -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bungee&family=Comic+Neue:wght@700&family=Orbitron:wght@900&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Inter, system-ui, -apple-system, sans-serif;
-    }
-
-    body {
-      height: 100vh;
-      width: 100vw;
-      overflow: hidden;
-      background: #09090e;
-      color: #ffffff;
-      display: flex;
-    }
-
-    /* ================= RESPONSIVE LAYOUT ================= */
-    @media (max-width: 1024px) {
-      body {
-        flex-direction: column;
-        overflow-y: auto;
-      }
-      .sidebar {
-        width: 100% !important;
-        min-width: 100% !important;
-        height: auto !important;
-        max-height: 50vh;
-        border-right: none !important;
-        border-bottom: 1px solid #252536;
-      }
-      .preview-area {
-        width: 100% !important;
-        height: 60vh !important;
-        min-height: 450px;
-      }
-    }
-
-    @media (max-width: 600px) {
-      .preview-area {
-        padding: 40px 12px 30px !important;
-      }
-      .char-grid {
-        grid-template-columns: 1fr !important;
-      }
-    }
-
-    /* ================= LEFT CONTROL PANEL (360px) ================= */
-    .sidebar {
-      width: 360px;
-      min-width: 360px;
-      height: 100vh;
-      background: #13131c;
-      border-right: 1px solid #252536;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      overflow-y: auto;
-      z-index: 10;
-    }
-
-    .sidebar::-webkit-scrollbar {
-      width: 6px;
-    }
-    .sidebar::-webkit-scrollbar-thumb {
-      background: #2f2f46;
-      border-radius: 3px;
-    }
-
-    .brand-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .brand-header h1 {
-      font-size: 1.3rem;
-      background: linear-gradient(90deg, #ff007f, #00e5ff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      font-weight: 800;
-      letter-spacing: -0.3px;
-    }
-
-    .ai-pill {
-      font-size: 0.68rem;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: rgba(0, 229, 255, 0.15);
-      color: #00e5ff;
-      border: 1px solid rgba(0, 229, 255, 0.35);
-      text-transform: uppercase;
-    }
-
-    .section {
-      background: #1b1b27;
-      padding: 14px;
-      border-radius: 12px;
-      border: 1px solid #2b2b3d;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .section h2 {
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.9px;
-      color: #9e9eb8;
-      font-weight: 700;
-    }
-
-    /* Character Selection Grid */
-    .char-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .char-btn {
-      padding: 10px 8px;
-      border: 1.5px solid #2e2e42;
-      border-radius: 10px;
-      background: #13131c;
-      color: #e4e4f0;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.8rem;
-      text-align: center;
-    }
-
-    .char-btn span {
-      font-size: 1.35rem;
-    }
-
-    .char-btn:hover {
-      border-color: #ff007f;
-      transform: translateY(-1px);
-    }
-
-    .char-btn.active {
-      border-color: #00e5ff;
-      background: rgba(0, 229, 255, 0.12);
-      color: #ffffff;
-      box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
-    }
-
-    /* Upload Dropzones */
-    .upload-box {
-      border: 1.5px dashed #3d3d58;
-      border-radius: 10px;
-      padding: 12px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-      background: #13131c;
-      font-size: 0.8rem;
-      color: #b8b8d0;
-    }
-
-    .upload-box:hover, .upload-box.dragover {
-      border-color: #00e5ff;
-      color: #ffffff;
-      background: #181826;
-    }
-
-    .upload-box strong {
-      display: block;
-      color: #00e5ff;
-      margin-bottom: 3px;
-      font-size: 0.86rem;
-    }
-
-    .upload-box.pink strong {
-      color: #ff4da6;
-    }
-
-    .upload-box.pink:hover {
-      border-color: #ff007f;
-    }
-
-    input[type="file"] {
-      display: none;
-    }
-
-    /* Tracking Mode Badge & Action Buttons */
-    .tracking-status-card {
-      background: #13131c;
-      border: 1px solid #2b2b3d;
-      border-radius: 8px;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .mode-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.76rem;
-      font-weight: 700;
-      padding: 5px 10px;
-      border-radius: 6px;
-      background: rgba(255, 0, 127, 0.15);
-      color: #ff66b2;
-      border: 1px solid rgba(255, 0, 127, 0.35);
-      width: fit-content;
-    }
-
-    .mode-badge.ai {
-      background: rgba(0, 230, 118, 0.15);
-      color: #00e676;
-      border-color: rgba(0, 230, 118, 0.35);
-    }
-
-    .mode-badge.motion {
-      background: rgba(0, 229, 255, 0.15);
-      color: #00e5ff;
-      border-color: rgba(0, 229, 255, 0.35);
-    }
-
-    .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: currentColor;
-      box-shadow: 0 0 6px currentColor;
-    }
-
-    .btn-row {
-      display: flex;
-      gap: 6px;
-    }
-
-    .mini-btn {
-      flex: 1;
-      padding: 7px 8px;
-      border-radius: 7px;
-      border: 1px solid #35354d;
-      background: #222232;
-      color: #e0e0f0;
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .mini-btn:hover {
-      background: #2d2d42;
-      border-color: #00e5ff;
-    }
-
-    .mini-btn.active-lock {
-      background: #ff007f;
-      border-color: #ff007f;
-      color: #fff;
-    }
-
-    /* Sliders */
-    .slider-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      font-size: 0.78rem;
-      color: #a8a8c0;
-    }
-
-    .slider-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .slider-row span:first-child {
-      width: 78px;
-    }
-
-    .slider-val {
-      width: 38px;
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-      color: #fff;
-      font-weight: 600;
-    }
-
-    input[type="range"] {
-      flex: 1;
-      accent-color: #ff007f;
-      cursor: pointer;
-      height: 5px;
-    }
-
-    /* ================= RIGHT PREVIEW STAGE ================= */
-    .preview-area {
-      flex: 1;
-      height: 100vh;
-      background: radial-gradient(circle at center, #1e1035 0%, #08080c 100%);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 18px;
-      position: relative;
-      overflow: hidden;
-      padding: 64px 24px 56px;
-    }
-
-    /* Subtle Studio Grid Background */
-    .preview-area::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background-image: 
-        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-      background-size: 36px 36px;
-      pointer-events: none;
-    }
-
-    .top-hud {
-      position: absolute;
-      top: 18px;
-      left: 24px;
-      right: 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      pointer-events: none;
-      z-index: 6;
-    }
-
-    .stage-label {
-      background: rgba(19, 19, 28, 0.8);
-      border: 1px solid #2e2e44;
-      padding: 7px 14px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      color: #e0e0f5;
-      backdrop-filter: blur(8px);
-    }
-
-    /* Preset Mode Stage (Uses CSS Bounce/Tilt) */
-    .character-stage {
-      position: relative;
-      width: 340px;
-      height: 440px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      animation: danceBounce 0.55s infinite alternate ease-in-out;
-      transform-origin: bottom center;
-    }
-
-    #character-body {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-      user-select: none;
-      pointer-events: none;
-      filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.65));
-    }
-
-    #face-overlay {
-      position: absolute;
-      top: 25px;
-      left: 90px;
-      width: 160px;
-      height: 160px;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 3px solid #ffffff;
-      box-shadow: 0 0 18px rgba(255, 0, 127, 0.85);
-      cursor: grab;
-      z-index: 5;
-      animation: headTilt 0.275s infinite alternate ease-in-out;
-      background: #222;
-      touch-action: none;
-    }
-
-    #face-overlay:active {
-      cursor: grabbing;
-    }
-
-    #face-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      pointer-events: none;
-    }
-
-    /* Custom GIF/Video Tracking Canvas Stage (NO CSS wobble!) */
-    .tracker-stage {
-      display: none;
-      position: relative;
-      max-width: 100%;
-      max-height: calc(100vh - 215px);
-      border-radius: 16px;
-      overflow: hidden;
-      border: 2px solid #2e2e46;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(0, 229, 255, 0.12);
-      background: #0d0d14;
-    }
-
-    #tracker-canvas {
-      display: block;
-      max-width: 100%;
-      max-height: calc(100vh - 215px);
-      cursor: grab;
-      touch-action: none;
-    }
-
-    #tracker-canvas:active {
-      cursor: grabbing;
-    }
-
-    #tracker-canvas.pick-mode {
-      cursor: crosshair !important;
-    }
-
-    /* Loading / Processing Overlay inside Canvas Stage */
-    .processing-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(10, 10, 16, 0.86);
-      backdrop-filter: blur(6px);
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 14px;
-      z-index: 15;
-      text-align: center;
-      padding: 20px;
-    }
-
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid rgba(0, 229, 255, 0.2);
-      border-top-color: #00e5ff;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* ================= ANIMATED MEME TEXT OVERLAY ================= */
-    .char-counter {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: #00e5ff;
-      font-variant-numeric: tabular-nums;
-      background: rgba(0, 229, 255, 0.1);
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(0, 229, 255, 0.25);
-    }
-
-    .text-input-row {
-      display: flex;
-      gap: 6px;
-    }
-
-    .meme-text-input {
-      flex: 1;
-      background: #13131c;
-      border: 1.5px solid #35354d;
-      border-radius: 8px;
-      padding: 9px 10px;
-      color: #ffffff;
-      font-size: 0.84rem;
-      font-weight: 600;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-
-    .meme-text-input:focus {
-      border-color: #00e5ff;
-    }
-
-    .sub-label {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.7px;
-      color: #8f8fb0;
-      font-weight: 700;
-      margin-top: 2px;
-    }
-
-    .preset-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-    }
-
-    .chip-btn {
-      background: #13131c;
-      border: 1px solid #32324a;
-      color: #c8c8e0;
-      font-size: 0.68rem;
-      font-weight: 600;
-      padding: 4px 8px;
-      border-radius: 999px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .chip-btn:hover {
-      border-color: #ff007f;
-      color: #ffffff;
-      background: rgba(255, 0, 127, 0.15);
-    }
-
-    .anim-grid, .style-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 6px;
-    }
-
-    .anim-btn, .style-btn {
-      padding: 7px 6px;
-      border-radius: 7px;
-      border: 1px solid #32324a;
-      background: #13131c;
-      color: #d8d8ec;
-      font-size: 0.73rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.15s;
-      text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-    }
-
-    .anim-btn:hover, .style-btn:hover {
-      border-color: #00e5ff;
-      color: #fff;
-    }
-
-    .anim-btn.active {
-      background: rgba(255, 0, 127, 0.22);
-      border-color: #ff007f;
-      color: #ffffff;
-      box-shadow: 0 0 10px rgba(255, 0, 127, 0.3);
-    }
-
-    .style-btn.active {
-      background: rgba(0, 229, 255, 0.18);
-      border-color: #00e5ff;
-      color: #ffffff;
-      box-shadow: 0 0 10px rgba(0, 229, 255, 0.28);
-    }
-
-    /* ================= RIGHT PREVIEW ANIMATED TEXT BANNER ================= */
-    .meme-banner-wrapper {
-      position: relative;
-      z-index: 8;
-      max-width: 92%;
-      min-height: 54px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 6px 16px;
-      user-select: none;
-      cursor: grab;
-      transition: transform 0.1s ease-out;
-    }
-
-    .meme-banner-wrapper:active {
-      cursor: grabbing;
-    }
-
-    .meme-banner-wrapper.floating-mode {
-      position: absolute;
-      top: 64px;
-    }
-
-    #meme-text-display {
-      display: inline-flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: center;
-      line-height: 1.15;
-      font-size: 38px;
-      font-weight: 900;
-      letter-spacing: 1px;
-      word-break: break-word;
-    }
-
-    .meme-char {
-      display: inline-block;
-      white-space: pre;
-      transform-origin: center center;
-    }
-
-    /* --- 6 CHEESY OLD-SCHOOL WORDART / GEOCITIES TEXT STYLES --- */
-
-    /* 1. Rainbow with Big White Stroke (Classic 90s WordArt) */
-    .style-rainbow .meme-char {
-      font-family: 'Bungee', 'Arial Black', Impact, sans-serif;
-      background: linear-gradient(180deg, #ff0000 0%, #ff8800 22%, #ffee00 44%, #00dd44 66%, #0088ff 84%, #aa00ff 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      -webkit-text-stroke: 3.5px #ffffff;
-      paint-order: stroke fill;
-      filter: drop-shadow(3px 4px 0px #000000) drop-shadow(0 0 10px rgba(255, 255, 255, 0.45));
-    }
-
-    /* 2. Burning Fire (Blazing Flame Gradient + Flickering Ember Shadow) */
-    .style-fire .meme-char {
-      font-family: 'Anton', Impact, sans-serif;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      background: linear-gradient(180deg, #fff799 0%, #ffdd00 28%, #ff6a00 62%, #cc0000 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      -webkit-text-stroke: 2px #3b0000;
-      paint-order: stroke fill;
-      animation: fireFlicker 0.16s infinite alternate;
-    }
-
-    @keyframes fireFlicker {
-      0% {
-        filter: drop-shadow(0 -3px 6px #ffae00) drop-shadow(0 -8px 14px #ff4500) drop-shadow(0 3px 2px #000);
-      }
-      100% {
-        filter: drop-shadow(0 -5px 9px #fff200) drop-shadow(0 -12px 18px #ff1e00) drop-shadow(0 3px 2px #000);
-      }
-    }
-
-    /* 3. Cheesy 3D Gradient (Metallic Gold/Cyan Extruded WordArt) */
-    .style-wordart3d {
-      transform: perspective(420px) rotateX(14deg) skewX(-6deg);
-    }
-    .style-wordart3d .meme-char {
-      font-family: 'Comic Neue', 'Arial Black', sans-serif;
-      font-weight: 900;
-      background: linear-gradient(180deg, #ffffff 0%, #00f0ff 35%, #ffea00 68%, #ff6f00 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      -webkit-text-stroke: 1.5px #002b5c;
-      paint-order: stroke fill;
-      filter:
-        drop-shadow(1px 1px 0px #004488)
-        drop-shadow(2px 2px 0px #003366)
-        drop-shadow(3px 3px 0px #002244)
-        drop-shadow(4px 4px 0px #001122)
-        drop-shadow(6px 7px 6px rgba(0, 0, 0, 0.85));
-    }
-
-    /* 4. Old-School Goth Font (Medieval Blackletter + Crimson/Silver Bevel) */
-    .style-goth .meme-char {
-      font-family: 'UnifrakturMaguntia', Georgia, serif;
-      font-weight: 400;
-      letter-spacing: 1.5px;
-      background: linear-gradient(180deg, #ffffff 0%, #d4d4dc 45%, #8a0303 80%, #ff1a1a 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      -webkit-text-stroke: 1.5px #1a0000;
-      paint-order: stroke fill;
-      filter: drop-shadow(0 0 8px rgba(220, 0, 30, 0.8)) drop-shadow(3px 4px 0px #000000);
-    }
-
-    /* 5. Comic Impact (Classic Top-Text Meme Font) */
-    .style-impact .meme-char {
-      font-family: 'Anton', Impact, 'Arial Black', sans-serif;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: #ffffff;
-      -webkit-text-fill-color: #ffffff;
-      -webkit-text-stroke: 3px #000000;
-      paint-order: stroke fill;
-      filter: drop-shadow(3px 3px 0px #000000);
-    }
-
-    /* 6. Cyber Neon (Retro 80s/90s Arcade Glow) */
-    .style-neon .meme-char {
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 900;
-      text-transform: uppercase;
-      color: #ff99ff;
-      -webkit-text-fill-color: #ffffff;
-      -webkit-text-stroke: 1.5px #ff00cc;
-      paint-order: stroke fill;
-      filter:
-        drop-shadow(0 0 4px #ff00cc)
-        drop-shadow(0 0 12px #ff00cc)
-        drop-shadow(0 0 22px #00e5ff);
-    }
-
-    /* --- 6 KINETIC TEXT ANIMATIONS --- */
-
-    /* 1. Wave (Per-letter sine wave using --i delay) */
-    .anim-wave .meme-char {
-      animation: textWave 1.1s ease-in-out infinite;
-      animation-delay: calc(var(--i) * -0.08s);
-    }
-    @keyframes textWave {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      25% { transform: translateY(-11px) rotate(-5deg); }
-      75% { transform: translateY(9px) rotate(5deg); }
-    }
-
-    /* 2. Heart Pumping (Lub-Dub rhythmic heartbeat pulse) */
-    .anim-heartbeat {
-      animation: heartPump 0.95s ease-in-out infinite;
-    }
-    @keyframes heartPump {
-      0%   { transform: scale(1); }
-      14%  { transform: scale(1.22); }
-      28%  { transform: scale(0.98); }
-      42%  { transform: scale(1.16); }
-      70%  { transform: scale(1); }
-      100% { transform: scale(1); }
-    }
-
-    /* 3. Shaking (Chaotic jitter/tremor per letter) */
-    .anim-shake .meme-char {
-      animation: textShake 0.14s linear infinite;
-      animation-delay: calc(var(--i) * -0.03s);
-    }
-    @keyframes textShake {
-      0%   { transform: translate(0px, 0px) rotate(0deg); }
-      25%  { transform: translate(-2.5px, 2px) rotate(-3deg); }
-      50%  { transform: translate(2.5px, -2px) rotate(3deg); }
-      75%  { transform: translate(-2px, -2.5px) rotate(-2deg); }
-      100% { transform: translate(2px, 2px) rotate(2deg); }
-    }
-
-    /* 4. Bounce (Squash & stretch disco hop) */
-    .anim-bounce .meme-char {
-      animation: textBounce 0.65s cubic-bezier(0.28, 0.84, 0.42, 1) infinite;
-      animation-delay: calc(var(--i) * -0.05s);
-    }
-    @keyframes textBounce {
-      0%, 100% { transform: translateY(0) scale(1.06, 0.92); }
-      45%      { transform: translateY(-14px) scale(0.94, 1.08); }
-    }
-
-    /* 5. Spin-Flip (Cheesy 90s Geocities 3D Y-axis flip) */
-    .anim-spin .meme-char {
-      animation: textSpinFlip 1.8s ease-in-out infinite;
-      animation-delay: calc(var(--i) * 0.07s);
-    }
-    @keyframes textSpinFlip {
-      0%, 100% { transform: perspective(300px) rotateY(0deg); }
-      50%      { transform: perspective(300px) rotateY(360deg); }
-    }
-
-    /* 6. None */
-    .anim-none .meme-char {
-      animation: none;
-    }
-
-    .hint-text {
-      position: absolute;
-      bottom: 16px;
-      font-size: 0.78rem;
-      color: #8888a4;
-      background: rgba(13, 13, 20, 0.75);
-      border: 1px solid #262638;
-      padding: 7px 14px;
-      border-radius: 20px;
-      backdrop-filter: blur(6px);
-      z-index: 6;
-      text-align: center;
-      max-width: 90%;
-    }
-
-    /* Preset Mode Dance Animations */
-    @keyframes danceBounce {
-      0% {
-        transform: rotate(-7deg) scaleY(0.96) translateY(6px);
-      }
-      100% {
-        transform: rotate(7deg) scaleY(1.04) translateY(-10px);
-      }
-    }
-
-    @keyframes headTilt {
-      0% {
-        transform: rotate(-9deg) scale(0.97);
-      }
-      100% {
-        transform: rotate(9deg) scale(1.03);
-      }
-    }
-  </style>
+<link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/meme-overlay.css" />
 </head>
-<body>
+<body class="min-h-screen w-full flex flex-col md:flex-row md:h-screen md:overflow-hidden selection:bg-studio-cyan selection:text-black">
 
-  <!-- LEFT SIDEBAR: CONTROLS -->
-  <aside class="sidebar">
-    <div class="brand-header">
-      <h1>🕺 Brainrot Studio</h1>
-      <span class="ai-pill">AI + Motion Track</span>
+  <div id="toastBanner" class="fixed top-4 right-4 z-50 pointer-events-none opacity-0 translate-y-[-10px] transition-all duration-300 max-w-sm">
+    <div class="bg-studio-card/95 backdrop-blur-md border border-studio-cyan/50 text-slate-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-xs font-medium">
+      <span class="w-2.5 h-2.5 rounded-full bg-studio-cyan animate-ping shrink-0"></span>
+      <span id="toastMessage">System Ready</span>
+    </div>
+  </div>
+
+  <aside id="controlDeck" class="w-full md:w-[400px] lg:w-[430px] shrink-0 bg-studio-panel/95 backdrop-blur-xl border-b md:border-b-0 md:border-r border-studio-border flex flex-col md:h-full z-20">
+
+    <div class="px-4 py-3.5 border-b border-studio-border bg-studio-bg/60 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-studio-cyan via-studio-purple to-studio-magenta p-[1.5px] shadow-lg shadow-studio-cyan/20">
+          <div class="w-full h-full bg-studio-bg rounded-[6.5px] flex items-center justify-center">
+            <svg class="w-4 h-4 text-studio-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"></polygon>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <h1 class="text-sm font-extrabold tracking-wider uppercase bg-gradient-to-r from-white via-studio-cyan to-studio-magenta bg-clip-text text-transparent">
+             Quẩy Đêz STUDIO
+          </h1>
+          <p class="text-[10px] font-mono text-slate-400 tracking-wide">AUDIO-REACTIVE VISUAL SYNTH</p>
+        </div>
+      </div>
+
+      <button id="toggleDeckBtn" class="md:hidden px-2.5 py-1.5 rounded-lg bg-studio-card border border-studio-border text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5">
+        <span id="toggleDeckLabel">Hide Controls</span>
+        <svg id="toggleDeckIcon" class="w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+        </svg>
+      </button>
     </div>
 
-    <!-- 1. Preset Character Buttons -->
-    <div class="section">
-      <div class="section-header">
-        <h2>1. Preset Characters</h2>
-      </div>
-      <div class="char-grid">
-        <button class="char-btn active" onclick="selectPresetCategory('creatures', this)">
-          <span>👾</span>
-          Creatures
+    <div class="px-4 pt-3 pb-2 bg-studio-bg/40 border-b border-studio-border shrink-0">
+      <div class="grid grid-cols-2 gap-1.5 p-1 bg-studio-bg rounded-xl border border-studio-border">
+        <button type="button" id="tabBtnVj" data-tab="vj" class="studio-tab-btn py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wider bg-studio-cyan/20 text-studio-cyan border border-studio-cyan/60 shadow-[0_0_12px_rgba(0,240,255,0.2)] transition flex items-center justify-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-studio-cyan"></span>
+          <span>VJ Studio</span>
         </button>
-        <button class="char-btn" onclick="selectPresetCategory('alien', this)">
-          <span>👽</span>
-          Alien
-        </button>
-        <button class="char-btn" onclick="selectPresetCategory('dancingMan', this)">
+        <button type="button" id="tabBtnMeme" data-tab="meme" class="studio-tab-btn py-2 px-3 rounded-lg text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-slate-200 border border-transparent transition flex items-center justify-center gap-1.5">
           <span>🕺</span>
-          Dancing Man
-        </button>
-        <button class="char-btn" onclick="selectPresetCategory('animeGirl', this)">
-          <span>✨</span>
-          Anime Girl
+          <span>Meme Studio</span>
         </button>
       </div>
     </div>
 
-    <!-- 2. Upload Custom GIF / Video -->
-    <div class="section">
-      <div class="section-header">
-        <h2>2. Upload Custom GIF / Video</h2>
-      </div>
-      <label class="upload-box" id="gif-dropzone" for="gif-upload">
-        <strong>🎞️ Upload Dancing GIF / MP4 / WebM</strong>
-        <span id="gif-filename">Tracks the character's head natively without CSS wobble</span>
-      </label>
-      <input type="file" id="gif-upload" accept="image/gif,video/mp4,video/webm,image/webp,image/png,image/jpeg" />
-    </div>
+    <div id="deckScrollArea" class="p-4 overflow-y-auto flex-1">
 
-    <!-- 3. Upload Face Photo & Fine-Tune -->
-    <div class="section">
-      <div class="section-header">
-        <h2>3. Upload Face Photo</h2>
-      </div>
-      <label class="upload-box pink" id="face-dropzone" for="face-upload">
-        <strong>📸 Upload Face Picture</strong>
-        <span id="face-filename">Click or drop a face photo here</span>
-      </label>
-      <input type="file" id="face-upload" accept="image/*" />
+      <div id="vjStudioTabPanel" class="space-y-4">
 
-      <div class="slider-group">
-        <div class="slider-row">
-          <span>Face Scale:</span>
-          <input type="range" id="size-slider" min="0.4" max="3.2" step="0.05" value="1.0" />
-          <span class="slider-val" id="size-val">1.0x</span>
-        </div>
-        <div class="slider-row" id="speed-row">
-          <span>Dance Speed:</span>
-          <input type="range" id="speed-slider" min="0.2" max="1.2" step="0.05" value="0.55" />
-          <span class="slider-val" id="speed-val">0.55s</span>
-        </div>
-        <div class="slider-row" id="offset-x-row" style="display: none;">
-          <span>X-Offset:</span>
-          <input type="range" id="offset-x-slider" min="-150" max="150" step="1" value="0" />
-          <span class="slider-val" id="offset-x-val">0px</span>
-        </div>
-        <div class="slider-row" id="offset-y-row" style="display: none;">
-          <span>Y-Offset:</span>
-          <input type="range" id="offset-y-slider" min="-150" max="150" step="1" value="0" />
-          <span class="slider-val" id="offset-y-val">0px</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 4. Animated Meme Text (Cheesy Old-School WordArt) -->
-    <div class="section">
-      <div class="section-header">
-        <h2>4. Animated Meme Text</h2>
-        <span class="char-counter" id="char-counter">22 / 120</span>
-      </div>
-
-      <!-- Sentence-Length Text Box (maxlength 120) -->
-      <div class="text-input-row">
-        <input
-          type="text"
-          id="meme-text-input"
-          class="meme-text-input"
-          maxlength="120"
-          value="TUNG TUNG SAHUR TIME!!"
-          placeholder="Type a cheesy sentence (max 120 chars)..."
-        />
-      </div>
-
-      <!-- Quick Brainrot Catchphrase Chips -->
-      <div class="preset-chips">
-        <button class="chip-btn" onclick="applyPresetText('TUNG TUNG SAHUR TIME!!')">🪵 Tung Tung</button>
-        <button class="chip-btn" onclick="applyPresetText('WHAT THE SIGMA?! 👽')">👽 Sigma</button>
-        <button class="chip-btn" onclick="applyPresetText('WE LIVE WE LOVE WE LIE')">🍄 Smurf Cat</button>
-        <button class="chip-btn" onclick="applyPresetText('GEGAGEDIGEDAGEDAGO 🍗')">🍗 Nugget</button>
-        <button class="chip-btn" onclick="applyPresetText('')">✖ Clear</button>
-      </div>
-
-      <!-- Animation Style Buttons -->
-      <div class="sub-label">Animation Style</div>
-      <div class="anim-grid">
-        <button class="anim-btn active" onclick="setTextAnimation('wave', this)">🌊 Wave</button>
-        <button class="anim-btn" onclick="setTextAnimation('heartbeat', this)">💓 Heart Pumping</button>
-        <button class="anim-btn" onclick="setTextAnimation('shake', this)">🫨 Shaking</button>
-        <button class="anim-btn" onclick="setTextAnimation('bounce', this)">🏀 Bounce</button>
-        <button class="anim-btn" onclick="setTextAnimation('spin', this)">🔄 Spin-Flip</button>
-        <button class="anim-btn" onclick="setTextAnimation('none', this)">⏹️ None</button>
-      </div>
-
-      <!-- Cheesy Old-School Text Style Buttons -->
-      <div class="sub-label">Old-School WordArt Style</div>
-      <div class="style-grid">
-        <button class="style-btn active" onclick="setTextStyle('rainbow', this)">🌈 Rainbow + Stroke</button>
-        <button class="style-btn" onclick="setTextStyle('fire', this)">🔥 Burning Fire</button>
-        <button class="style-btn" onclick="setTextStyle('wordart3d', this)">💿 Cheesy 3D Grad</button>
-        <button class="style-btn" onclick="setTextStyle('goth', this)">🦇 Old-School Goth</button>
-        <button class="style-btn" onclick="setTextStyle('impact', this)">💥 Comic Impact</button>
-        <button class="style-btn" onclick="setTextStyle('neon', this)">⚡ Cyber Neon</button>
-      </div>
-
-      <!-- Text Size & Placement Toggle -->
-      <div class="slider-group">
-        <div class="slider-row">
-          <span>Text Size:</span>
-          <input type="range" id="text-size-slider" min="20" max="68" step="1" value="38" />
-          <span class="slider-val" id="text-size-val">38px</span>
-        </div>
-        <div class="btn-row">
-          <button class="mini-btn" id="btn-toggle-pin" onclick="toggleTextPlacement()">
-            📌 Pinned Above GIF
-          </button>
-          <button class="mini-btn" onclick="resetTextPosition()">
-            ↩ Reset Text Pos
+        <div id="controlFlashWarning" class="bg-amber-500/10 border border-amber-400/45 rounded-xl px-3 py-2 flex items-start justify-between gap-2.5 shadow-sm">
+          <div class="flex items-start gap-2">
+            <span class="text-amber-400 text-sm leading-none mt-0.5 shrink-0">⚠️</span>
+            <p class="text-[11px] text-amber-200/95 leading-snug">
+              <span class="font-bold uppercase tracking-wide text-amber-300">Flash Warning:</span>
+              Contains rapid strobe lights &amp; high-contrast patterns that may trigger seizures in photosensitive viewers.
+            </p>
+          </div>
+          <button id="dismissControlWarningBtn" class="text-[10px] font-mono text-amber-300/80 hover:text-amber-200 px-1.5 py-0.5 rounded bg-amber-500/15 shrink-0" title="Dismiss warning">
+            OK
           </button>
         </div>
+
+        <section class="bg-studio-card/80 border border-studio-border rounded-2xl p-3.5 space-y-3 shadow-lg">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-studio-cyan"></span>
+              Audio Input Source
+            </h2>
+            <span id="audioSourceBadge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+              STANDBY
+            </span>
+          </div>
+
+          <div id="dropZone" class="relative group border-2 border-dashed border-studio-border hover:border-studio-cyan/80 rounded-xl p-3.5 text-center transition-all cursor-pointer bg-studio-bg/50 hover:bg-studio-cyan/5">
+            <input type="file" id="audioFileInput" accept=".mp3,.wav,.ogg,.m4a,audio/*" class="hidden" />
+            <div class="flex flex-col items-center justify-center gap-1.5">
+              <div class="w-9 h-9 rounded-full bg-studio-panel border border-studio-border group-hover:border-studio-cyan/50 flex items-center justify-center text-studio-cyan transition-transform group-hover:scale-105">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </div>
+              <p class="text-xs font-semibold text-slate-200">
+                Upload Song from Device
+              </p>
+              <p class="text-[11px] text-slate-400">
+                Click or drag &amp; drop <span class="font-mono text-studio-cyan">MP3, WAV, OGG, M4A</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="playPauseBtn" disabled class="flex-1 py-2 px-3 rounded-xl bg-studio-cyan/15 border border-studio-cyan/40 text-studio-cyan disabled:opacity-40 disabled:cursor-not-allowed hover:bg-studio-cyan/25 font-semibold text-xs flex items-center justify-center gap-1.5 transition">
+              <svg id="playIcon" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+              <span id="playPauseLabel">Play Loop</span>
+            </button>
+
+            <button id="demoSynthBtn" class="py-2 px-3 rounded-xl bg-gradient-to-r from-studio-purple/30 to-studio-magenta/30 border border-studio-magenta/50 hover:border-studio-magenta text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition shadow-sm" title="Start built-in procedural club beat">
+              <svg class="w-3.5 h-3.5 text-studio-magenta" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span id="demoSynthLabel">Demo Beat</span>
+            </button>
+          </div>
+
+          <div id="trackInfoBar" class="hidden items-center justify-between bg-studio-bg/80 border border-studio-border rounded-lg px-2.5 py-1.5 text-[11px]">
+            <div class="flex items-center gap-2 truncate">
+              <span class="text-studio-cyan font-mono">LOOP:ON</span>
+              <span id="trackNameDisplay" class="truncate text-slate-200 font-medium">No track loaded</span>
+            </div>
+            <span id="trackTimeDisplay" class="font-mono text-slate-400 shrink-0 ml-2">00:00</span>
+          </div>
+
+          <div class="pt-2 border-t border-studio-border/80 space-y-2">
+            <div class="flex items-center gap-2">
+              <button id="micToggleBtn" class="flex-1 py-2 px-3 rounded-xl bg-studio-panel hover:bg-slate-800 border border-studio-border text-slate-200 font-semibold text-xs flex items-center justify-center gap-2 transition">
+                <span id="micDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+                <span id="micBtnLabel">Mic / Live Input</span>
+              </button>
+
+              <button id="recordBtn" disabled class="py-2 px-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 disabled:opacity-35 disabled:cursor-not-allowed hover:bg-rose-500/25 font-semibold text-xs flex items-center justify-center gap-1.5 transition" title="Record incoming microphone/system audio">
+                <span id="recDot" class="w-2 h-2 rounded-full bg-rose-500"></span>
+                <span id="recBtnLabel">Record</span>
+              </button>
+            </div>
+
+            <div id="micMeterContainer" class="hidden space-y-1">
+              <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                <span>LIVE INPUT GAIN</span>
+                <span id="micDbLabel">-60 dB</span>
+              </div>
+              <div class="w-full h-1.5 bg-studio-bg rounded-full overflow-hidden">
+                <div id="micLevelBar" class="h-full w-0 bg-gradient-to-r from-studio-cyan via-studio-lime to-studio-magenta transition-all duration-75"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-studio-card/80 border border-studio-border rounded-2xl p-3.5 space-y-2.5 shadow-lg">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-studio-cyan"></span>
+                Visual Reactivity Strength
+              </h2>
+              <p class="text-[10.5px] text-slate-400 mt-0.5">Adjust response intensity to prevent whiteout on loud drops</p>
+            </div>
+            <span id="reactivityPercentText" class="text-xs font-mono font-bold text-studio-cyan bg-studio-cyan/10 border border-studio-cyan/30 px-2 py-0.5 rounded-md">
+              65%
+            </span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" data-reactivity="0.40" class="reactivity-preset-btn py-1.5 px-2 rounded-lg text-[11px] font-semibold bg-studio-panel text-slate-400 border border-studio-border hover:text-slate-200 transition">
+              Subtle 40%
+            </button>
+            <button type="button" data-reactivity="0.65" class="reactivity-preset-btn py-1.5 px-2 rounded-lg text-[11px] font-semibold bg-studio-cyan/20 text-studio-cyan border border-studio-cyan shadow-[0_0_10px_rgba(0,240,255,0.2)] transition">
+              Balanced 65%
+            </button>
+            <button type="button" data-reactivity="1.00" class="reactivity-preset-btn py-1.5 px-2 rounded-lg text-[11px] font-semibold bg-studio-panel text-slate-400 border border-studio-border hover:text-slate-200 transition">
+              Full 100%
+            </button>
+          </div>
+
+          <div class="flex items-center gap-3 bg-studio-bg/70 px-3 py-2 rounded-xl border border-studio-border">
+            <span class="text-[10px] font-mono text-slate-400 shrink-0">10%</span>
+            <input id="reactivitySlider" type="range" min="10" max="120" value="65" class="w-full" />
+            <span class="text-[10px] font-mono text-slate-400 shrink-0">120%</span>
+          </div>
+        </section>
+
+        <section class="bg-studio-card/80 border border-studio-border rounded-2xl p-3.5 space-y-3 shadow-lg">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-studio-magenta"></span>
+                Responds to Song Frequencies
+              </h2>
+              <p class="text-[11px] text-slate-400 mt-0.5">Select up to <span class="text-studio-cyan font-semibold">2 visual effects</span> per frequency channel</p>
+            </div>
+          </div>
+
+          <div id="frequencyBandsContainer" class="space-y-3"></div>
+        </section>
+
+        <section class="bg-studio-card/80 border border-studio-border rounded-2xl p-3.5 space-y-3.5 shadow-lg">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-studio-lime"></span>
+              Master Output &amp; Projection
+            </h2>
+            <span id="volumePercentText" class="text-xs font-mono font-bold text-studio-cyan">85%</span>
+          </div>
+
+          <div class="flex items-center gap-3 bg-studio-bg/70 p-2.5 rounded-xl border border-studio-border">
+            <button id="muteToggleBtn" class="p-2 rounded-lg bg-studio-panel hover:bg-slate-800 border border-studio-border text-studio-cyan transition shrink-0" title="Mute / Unmute">
+              <svg id="volIconUnmuted" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              </svg>
+              <svg id="volIconMuted" class="w-4 h-4 hidden text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+              </svg>
+            </button>
+            <input id="masterVolumeSlider" type="range" min="0" max="100" value="85" class="w-full" />
+          </div>
+
+          <button id="openPreviewTabBtn" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-studio-cyan via-blue-500 to-studio-magenta text-slate-950 font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-studio-cyan/25 hover:brightness-110 active:scale-[0.99] transition flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            <span>Open Shareable Visual Tab</span>
+          </button>
+        </section>
+
       </div>
+
+      <div id="memeStudioTabPanel" class="hidden space-y-4">
+
+        <div class="bg-studio-cyan/10 border border-studio-cyan/30 rounded-xl px-3 py-2 flex items-center justify-between text-[11px] text-slate-200">
+          <span>Transparent layer over live VJ stage</span>
+          <span class="font-mono text-[10px] text-studio-cyan uppercase">AI + Motion Track</span>
+        </div>
+
+        <section class="bg-studio-card/80 border border-studio-border rounded-2xl p-3.5 space-y-2.5 shadow-lg">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-studio-cyan"></span>
+              1. Preset Characters
+            </h2>
+          </div>
+          <div class="char-grid">
+            <button type="button" class="char-btn active" onclick="selectPresetCategory('creatures', this)">
+              <span>👾</span>
+              Creatures
+            </button>
+            <button type="button" class="char-btn" onclick="selectPresetCategory('alien', this)">
+              <span>👽</span>
+              Alien
+            </button>
+            <button type="button" class="char-btn" onclick="selectPresetCategory('dancingMan', this)">
+              <span>🕺</span>
+              Dancing Man
+            </button>
+            <button type="button" class="char-btn" onclick="selectPresetCategory('animeGirl', this)">
+              <span>✨</span>
+              Anime Girl
+            </button>
+          </div>
+        </section>
+
+        <section class="bg-studio-card/80 border border-studio-border rounded-2xl p-3.5 space-y-3 shadow-lg">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-studio-purple"></span>
+              2. Custom GIF / Video Layer
+            </h2>
+            <label class="toggle-switch" title="Show or hide the GIF layer over VJ stage">
+              <span id="gif-vis-label">Off</span>
+              <input type="checkbox" id="toggle-gif-vis" />
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <label class="meme-upload-box" id="gif-dropzone" for="gif-upload">
+            <strong>🎞️ Upload Dancing GIF / MP4 / WebM</strong>
+            <span id="gif-filename">Tracks character head natively over VJ stage</span>
+          </label>
+          <input type="file" id="gif-upload" accept="image/gif,video/mp4,video/webm,image/webp,image/png,image/jpeg" class="hidden" />
+
+          <div class="flex items-center justify-between gap-2 text-xs text-slate-300 bg-studio-bg/70 px-3 py-2 rounded-xl border border-studio-border">
+            <span class="w-20 shrink-0 text-[11px]">GIF Scale:</span>
+            <input type="range" id="gif-scale-slider" min="0.4" max="2.0" step="0.05" value="1.0" class="w-full" />
+            <span class="w-10 text-right font-mono text-[11px] font-bold text-studio-cyan shrink-0" id="gif-scale-val">1.0x</span>
+          </div>
+        </section>
+
+        <section class="bg-studio-card/80 border border-studio-border rounded-2xl p-3.5 space-y-3 shadow-lg">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-studio-magenta"></span>
+              3. Upload Face Photo
+            </h2>
+          </div>
+          <label class="meme-upload-box pink" id="face-dropzone" for="face-upload">
+            <strong>📸 Upload Face Picture</strong>
+            <span id="face-filename">Click or drop a face photo here</span>
+          </label>
+          <input type="file" id="face-upload" accept="image/*" class="hidden" />
+
+          <div class="space-y-2 bg-studio-bg/70 p-2.5 rounded-xl border border-studio-border">
+            <div class="flex items-center justify-between gap-2 text-xs text-slate-300">
+              <span class="w-20 shrink-0 text-[11px]">Face Scale:</span>
+              <input type="range" id="size-slider" min="0.4" max="3.2" step="0.05" value="1.0" class="w-full" />
+              <span class="w-10 text-right font-mono text-[11px] font-bold text-studio-cyan shrink-0" id="size-val">1.0x</span>
+            </div>
+            <div class="flex items-center justify-between gap-2 text-xs text-slate-300" id="offset-x-row">
+              <span class="w-20 shrink-0 text-[11px]">X-Offset:</span>
+              <input type="range" id="offset-x-slider" min="-150" max="150" step="1" value="0" class="w-full" />
+              <span class="w-10 text-right font-mono text-[11px] font-bold text-studio-cyan shrink-0" id="offset-x-val">0px</span>
+            </div>
+            <div class="flex items-center justify-between gap-2 text-xs text-slate-300" id="offset-y-row">
+              <span class="w-20 shrink-0 text-[11px]">Y-Offset:</span>
+              <input type="range" id="offset-y-slider" min="-150" max="150" step="1" value="0" class="w-full" />
+              <span class="w-10 text-right font-mono text-[11px] font-bold text-studio-cyan shrink-0" id="offset-y-val">0px</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-studio-card/80 border border-studio-border rounded-2xl p-3.5 space-y-3 shadow-lg">
+          <div class="flex items-center justify-between gap-2">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-studio-lime"></span>
+              4. Animated Meme Text
+            </h2>
+            <div class="flex items-center gap-2">
+              <span class="char-counter" id="char-counter">22 / 120</span>
+              <label class="toggle-switch" title="Show or hide the animated meme text over VJ stage">
+                <span id="text-vis-label">Off</span>
+                <input type="checkbox" id="toggle-text-vis" />
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+          </div>
+
+          <input
+            type="text"
+            id="meme-text-input"
+            class="meme-text-input"
+            maxlength="120"
+            value="TUNG TUNG SAHUR TIME!!"
+            placeholder="Type a cheesy sentence (max 120 chars)..."
+          />
+
+          <div class="preset-chips">
+            <button type="button" class="chip-btn" onclick="applyPresetText('TUNG TUNG SAHUR TIME!!')">🪵 Tung Tung</button>
+            <button type="button" class="chip-btn" onclick="applyPresetText('WHAT THE SIGMA?! 👽')">👽 Sigma</button>
+            <button type="button" class="chip-btn" onclick="applyPresetText('WE LIVE WE LOVE WE LIE')">🍄 Smurf Cat</button>
+            <button type="button" class="chip-btn" onclick="applyPresetText('GEGAGEDIGEDAGEDAGO 🍗')">🍗 Nugget</button>
+            <button type="button" class="chip-btn" onclick="applyPresetText('')">✖ Clear</button>
+          </div>
+
+          <div class="sub-label">Animation Style</div>
+          <div class="anim-grid">
+            <button type="button" class="anim-btn active" onclick="setTextAnimation('wave', this)">🌊 Wave</button>
+            <button type="button" class="anim-btn" onclick="setTextAnimation('heartbeat', this)">💓 Heart Pumping</button>
+            <button type="button" class="anim-btn" onclick="setTextAnimation('shake', this)">🫨 Shaking</button>
+            <button type="button" class="anim-btn" onclick="setTextAnimation('bounce', this)">🏀 Bounce</button>
+            <button type="button" class="anim-btn" onclick="setTextAnimation('spin', this)">🔄 Spin-Flip</button>
+            <button type="button" class="anim-btn" onclick="setTextAnimation('none', this)">⏹️ None</button>
+          </div>
+
+          <div class="sub-label">Old-School WordArt Style</div>
+          <div class="style-grid">
+            <button type="button" class="style-btn active" onclick="setTextStyle('rainbow', this)">🌈 Rainbow + Stroke</button>
+            <button type="button" class="style-btn" onclick="setTextStyle('fire', this)">🔥 Burning Fire</button>
+            <button type="button" class="style-btn" onclick="setTextStyle('wordart3d', this)">💿 Cheesy 3D Grad</button>
+            <button type="button" class="style-btn" onclick="setTextStyle('goth', this)">🦇 Old-School Goth</button>
+            <button type="button" class="style-btn" onclick="setTextStyle('impact', this)">💥 Comic Impact</button>
+            <button type="button" class="style-btn" onclick="setTextStyle('neon', this)">⚡ Cyber Neon</button>
+          </div>
+
+          <div class="space-y-2 bg-studio-bg/70 p-2.5 rounded-xl border border-studio-border">
+            <div class="flex items-center justify-between gap-2 text-xs text-slate-300">
+              <span class="w-20 shrink-0 text-[11px]">Text Size:</span>
+              <input type="range" id="text-size-slider" min="20" max="68" step="1" value="38" class="w-full" />
+              <span class="w-10 text-right font-mono text-[11px] font-bold text-studio-cyan shrink-0" id="text-size-val">38px</span>
+            </div>
+            <div class="flex gap-1.5 pt-1">
+              <button type="button" class="mini-btn" id="btn-toggle-pin" onclick="toggleTextPlacement()">
+                📌 Pinned Above GIF
+              </button>
+              <button type="button" class="mini-btn" onclick="resetTextPosition()">
+                ↩ Reset Text Pos
+              </button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
     </div>
   </aside>
 
-  <!-- RIGHT SIDE: PREVIEW STAGE -->
-  <main class="preview-area">
-    <div class="top-hud">
-      <div class="stage-label" id="current-label">Preset Mode: Creatures</div>
-      <div class="stage-label" id="fps-label" style="display: none;">Native Frame Sync</div>
-    </div>
+  <main id="stageViewport" class="flex-1 relative flex flex-col justify-between min-h-[540px] md:min-h-0 md:h-full stage-brick-wall overflow-hidden select-none">
 
-    <!-- ANIMATED TEXT BANNER (Positioned above the GIF / Character Preview) -->
-    <div class="meme-banner-wrapper" id="meme-banner-wrapper" title="Drag text anywhere or keep pinned above the GIF!">
-      <div id="meme-text-display" class="style-rainbow anim-wave"></div>
-    </div>
+    <div class="relative z-10 w-full px-4 pt-2.5 pb-1 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+      <div class="flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full">
+        <span id="stageLiveIndicator" class="w-2 h-2 rounded-full bg-studio-cyan animate-pulse"></span>
+        <span class="text-[10px] font-mono tracking-widest text-slate-300 uppercase">MAIN STAGE WALL // 60 FPS</span>
+      </div>
 
-    <!-- MODE A: Preset Character Stage (CSS Bounce) -->
-    <div class="character-stage" id="preset-stage">
-      <img id="character-body" alt="Dancing Character" />
-      <div id="face-overlay" title="Drag to align face on character">
-        <img id="face-img" alt="User Face" />
+      <div class="flex items-center gap-1.5 bg-amber-500/15 backdrop-blur-md border border-amber-400/40 px-2.5 py-1 rounded-full">
+        <span class="text-[10px]">⚠️</span>
+        <span class="text-[10px] font-mono tracking-wide text-amber-200 uppercase">Photosensitivity Warning: Flashing Lights</span>
+      </div>
+
+      <div id="aspectRatioBadge" class="bg-black/60 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full text-[10px] font-mono text-slate-400">
+        16:9
       </div>
     </div>
 
-    <!-- MODE B: Custom GIF / Video Frame-Tracked Canvas Stage (Zero CSS Wobble) -->
-    <div class="tracker-stage" id="tracker-stage">
-      <canvas id="tracker-canvas"></canvas>
-      <div class="processing-overlay" id="processing-overlay">
-        <div class="spinner"></div>
-        <div id="processing-text" style="font-weight: 700; font-size: 0.95rem;">Decoding GIF & Tracking Head...</div>
-        <div id="processing-sub" style="font-size: 0.78rem; color: #9e9eb8;">Running AI & 2D motion anchor detection</div>
+    <div class="relative flex-1 w-full flex items-end justify-between px-2 sm:px-5 md:px-6 pt-2 pb-0 overflow-hidden">
+
+      <button type="button" id="tornadoBtn" class="tornado-btn absolute top-2 left-2 sm:left-5 md:left-6 z-30 w-[54px] sm:w-[86px] lg:w-[116px]" title="Hold to spin the GIF (key 5)">
+        <span class="tornado-icon">🌪️</span>
+        <span>TORNADO</span>
+      </button>
+
+      <div class="absolute top-2 right-2 sm:right-5 md:right-6 z-30 flex flex-col items-end gap-1.5 bg-black/55 backdrop-blur-md border border-white/10 rounded-lg px-2 py-1.5">
+        <label class="toggle-switch" title="Show or hide the GIF layer">
+          <span>GIF</span>
+          <input type="checkbox" id="stage-toggle-gif" />
+          <span class="toggle-track"></span>
+        </label>
+        <label class="toggle-switch" title="Show or hide the meme text">
+          <span>TEXT</span>
+          <input type="checkbox" id="stage-toggle-text" />
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+
+
+      <div class="relative z-20 flex flex-col items-center w-[54px] sm:w-[86px] lg:w-[116px] shrink-0 mb-1 transition-transform duration-75" id="leftSpeakerStack">
+
+        <div class="w-[86%] aspect-[1.35/1] speaker-cabinet rounded-t-md border border-white/10 p-1.5 sm:p-2 flex items-center justify-between gap-1">
+          <div class="w-[58%] aspect-square rounded-full speaker-grille border border-slate-700 flex items-center justify-center relative">
+            <div class="speaker-cone w-[72%] h-[72%] rounded-full bg-gradient-to-br from-slate-700 to-slate-950 border border-slate-600 flex items-center justify-center shadow-inner">
+              <div class="w-[34%] h-[34%] rounded-full bg-slate-800 border border-slate-500"></div>
+            </div>
+          </div>
+          <div class="w-[34%] h-[78%] rounded-sm speaker-grille border border-slate-700 flex items-center justify-center">
+            <div class="w-2.5 h-3.5 rounded-xs bg-slate-800 border border-slate-600"></div>
+          </div>
+        </div>
+
+        <div class="w-full aspect-[1/2.15] speaker-cabinet rounded-md border border-white/15 p-1.5 sm:p-2.5 flex flex-col justify-between items-center">
+
+          <div class="w-full space-y-1">
+            <div class="flex justify-between px-0.5">
+              <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-500"></span>
+              <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-500"></span>
+              <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-studio-cyan shadow-[0_0_6px_#00f0ff]"></span>
+              <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-500"></span>
+            </div>
+            <div class="w-full h-3 sm:h-5 rounded-sm bg-black border border-slate-700 flex items-center justify-center">
+              <div class="w-[70%] h-[55%] bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 rounded-xs"></div>
+            </div>
+          </div>
+
+          <div class="w-[82%] aspect-square rounded-full speaker-grille border-2 border-slate-700/90 flex items-center justify-center shadow-inner">
+            <div class="speaker-cone w-[78%] h-[78%] rounded-full bg-gradient-to-tr from-zinc-950 via-zinc-800 to-zinc-700 border border-slate-600 flex items-center justify-center">
+              <div class="w-[34%] h-[34%] rounded-full bg-zinc-900 border border-slate-500 shadow-md"></div>
+            </div>
+          </div>
+
+          <div class="w-[82%] aspect-square rounded-full speaker-grille border-2 border-slate-700/90 flex items-center justify-center shadow-inner">
+            <div class="speaker-cone w-[78%] h-[78%] rounded-full bg-gradient-to-tr from-zinc-950 via-zinc-800 to-zinc-700 border border-slate-600 flex items-center justify-center">
+              <div class="w-[34%] h-[34%] rounded-full bg-zinc-900 border border-slate-500 shadow-md"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="projectionWallContainer" class="relative flex-1 h-[94%] mx-1.5 sm:mx-3 mb-2 rounded-xl overflow-hidden border border-white/10 shadow-[0_0_60px_rgba(0,0,0,0.95)] bg-black/75 flex items-center justify-center">
+
+        <div class="absolute inset-0 stage-brick-wall opacity-35 pointer-events-none z-0"></div>
+
+        <canvas id="vjCanvas" class="relative z-10 w-full h-full block"></canvas>
+
+        <div id="memeStageOverlayLayer">
+
+          <div class="meme-banner-wrapper" id="meme-banner-wrapper" title="Drag text anywhere or keep pinned above the GIF!">
+            <div id="meme-text-display" class="style-rainbow anim-wave"></div>
+          </div>
+
+          <div class="stage-scale-wrapper" id="stage-scale-wrapper">
+            <div class="tracker-stage" id="tracker-stage">
+              <canvas id="tracker-canvas" title="Drag on the GIF to fine-tune face offset"></canvas>
+              <div class="processing-overlay" id="processing-overlay">
+                <div class="spinner"></div>
+                <div id="processing-text" class="text-xs font-bold text-white">Decoding GIF &amp; Tracking Head...</div>
+                <div id="processing-sub" class="text-[11px] text-slate-400">Running AI &amp; 2D motion anchor detection</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage-key-hint">
+          <span><b>1</b> Strobe</span><span><b>2</b> Drop</span><span><b>3</b> Shift</span><span><b>4</b> Burst</span><span><b>5</b> Tornado (hold)</span>
+        </div>
+
+        <div id="wallGlowOverlay" class="absolute inset-0 pointer-events-none z-20 shadow-[inset_0_0_45px_rgba(0,240,255,0.18)] transition-shadow duration-150"></div>
+      </div>
+
+      <div class="relative z-20 flex flex-col items-center w-[54px] sm:w-[86px] lg:w-[116px] shrink-0 mb-1 transition-transform duration-75" id="rightSpeakerStack">
+
+        <div class="w-[86%] aspect-[1.35/1] speaker-cabinet rounded-t-md border border-white/10 p-1.5 sm:p-2 flex items-center justify-between gap-1">
+          <div class="w-[34%] h-[78%] rounded-sm speaker-grille border border-slate-700 flex items-center justify-center">
+            <div class="w-2.5 h-3.5 rounded-xs bg-slate-800 border border-slate-600"></div>
+          </div>
+          <div class="w-[58%] aspect-square rounded-full speaker-grille border border-slate-700 flex items-center justify-center relative">
+            <div class="speaker-cone w-[72%] h-[72%] rounded-full bg-gradient-to-br from-slate-700 to-slate-950 border border-slate-600 flex items-center justify-center shadow-inner">
+              <div class="w-[34%] h-[34%] rounded-full bg-slate-800 border border-slate-500"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="w-full aspect-[1/2.15] speaker-cabinet rounded-md border border-white/15 p-1.5 sm:p-2.5 flex flex-col justify-between items-center">
+          <div class="w-full space-y-1">
+            <div class="flex justify-between px-0.5">
+              <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-500"></span>
+              <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-studio-magenta shadow-[0_0_6px_#ff007f]"></span>
+              <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-500"></span>
+              <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-slate-500"></span>
+            </div>
+            <div class="w-full h-3 sm:h-5 rounded-sm bg-black border border-slate-700 flex items-center justify-center">
+              <div class="w-[70%] h-[55%] bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 rounded-xs"></div>
+            </div>
+          </div>
+          <div class="w-[82%] aspect-square rounded-full speaker-grille border-2 border-slate-700/90 flex items-center justify-center shadow-inner">
+            <div class="speaker-cone w-[78%] h-[78%] rounded-full bg-gradient-to-tr from-zinc-950 via-zinc-800 to-zinc-700 border border-slate-600 flex items-center justify-center">
+              <div class="w-[34%] h-[34%] rounded-full bg-zinc-900 border border-slate-500 shadow-md"></div>
+            </div>
+          </div>
+          <div class="w-[82%] aspect-square rounded-full speaker-grille border-2 border-slate-700/90 flex items-center justify-center shadow-inner">
+            <div class="speaker-cone w-[78%] h-[78%] rounded-full bg-gradient-to-tr from-zinc-950 via-zinc-800 to-zinc-700 border border-slate-600 flex items-center justify-center">
+              <div class="w-[34%] h-[34%] rounded-full bg-zinc-900 border border-slate-500 shadow-md"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="relative z-30 w-full stage-floor pt-2 px-2 sm:px-6 pb-0 border-t border-white/10">
+      <div class="max-w-4xl mx-auto bg-gradient-to-b from-[#1d202e] via-[#131520] to-[#0b0c12] rounded-t-2xl border-t border-x border-slate-700/80 shadow-[0_-10px_35px_rgba(0,0,0,0.9)] p-2.5 sm:p-3.5">
+
+        <div class="grid grid-cols-12 gap-2 sm:gap-3 items-center">
+
+          <div class="col-span-3 sm:col-span-4 bg-black/60 rounded-xl p-2 border border-slate-800 flex items-center justify-between gap-2 relative">
+            <div class="hidden sm:flex flex-col gap-1.5">
+              <button data-pad="flash" class="vj-pad w-7 h-7 rounded-md bg-studio-cyan/20 border border-studio-cyan/60 hover:bg-studio-cyan hover:text-black text-[9px] font-mono font-bold text-studio-cyan transition flex items-center justify-center" title="Trigger Beat Flash">FLS</button>
+              <button data-pad="pulse" class="vj-pad w-7 h-7 rounded-md bg-studio-magenta/20 border border-studio-magenta/60 hover:bg-studio-magenta hover:text-black text-[9px] font-mono font-bold text-studio-magenta transition flex items-center justify-center" title="Trigger Zoom Drop">DRP</button>
+            </div>
+            <div class="mx-auto flex flex-col items-center">
+              <div id="leftJogHousing" class="relative w-14 h-14 sm:w-20 sm:h-20 rounded-full p-1 bg-gradient-to-tr from-studio-cyan/60 to-studio-purple/50 shadow-lg transition-shadow">
+                <div id="leftJogWheel" class="w-full h-full rounded-full vinyl-disc border border-slate-700 flex items-center justify-center relative" title="Drag & spin to DJ scratch">
+                  <div class="absolute top-1 left-1/2 -translate-x-1/2 w-1 h-3 sm:h-4 bg-studio-cyan rounded-full shadow-[0_0_6px_#00f0ff]"></div>
+                  <div class="w-3 h-3 rounded-full bg-studio-cyan shadow-[0_0_8px_#00f0ff]"></div>
+                </div>
+              </div>
+              <span id="leftDeckStatus" class="text-[8px] font-mono text-studio-cyan/80 tracking-wider mt-1 uppercase">SCRATCH L</span>
+            </div>
+          </div>
+
+          <div class="col-span-6 sm:col-span-4 bg-black/70 rounded-xl p-2 border border-slate-800 flex flex-col justify-between gap-2">
+
+            <div class="grid grid-cols-4 gap-1.5 h-8 sm:h-10 items-end px-1 bg-studio-bg/90 rounded-lg p-1 border border-slate-800/80">
+              <div class="w-full h-full flex flex-col justify-end bg-slate-900 rounded-xs overflow-hidden">
+                <div id="mixerVuBass" class="w-full h-[15%] bg-gradient-to-t from-emerald-400 via-amber-400 to-rose-500 transition-all duration-75"></div>
+              </div>
+              <div class="w-full h-full flex flex-col justify-end bg-slate-900 rounded-xs overflow-hidden">
+                <div id="mixerVuKick" class="w-full h-[15%] bg-gradient-to-t from-studio-cyan via-blue-400 to-studio-magenta transition-all duration-75"></div>
+              </div>
+              <div class="w-full h-full flex flex-col justify-end bg-slate-900 rounded-xs overflow-hidden">
+                <div id="mixerVuMids" class="w-full h-[15%] bg-gradient-to-t from-studio-purple via-fuchsia-400 to-white transition-all duration-75"></div>
+              </div>
+              <div class="w-full h-full flex flex-col justify-end bg-slate-900 rounded-xs overflow-hidden">
+                <div id="mixerVuHighs" class="w-full h-[15%] bg-gradient-to-t from-studio-lime via-yellow-300 to-white transition-all duration-75"></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-4 gap-1.5">
+              <button data-pad="flash" class="vj-pad py-1.5 rounded-md bg-cyan-500/20 border border-cyan-400/60 hover:bg-cyan-400 hover:text-black text-[9px] font-mono font-bold text-cyan-300 active:scale-95 transition">
+                STROBE
+              </button>
+              <button data-pad="pulse" class="vj-pad py-1.5 rounded-md bg-pink-500/20 border border-pink-400/60 hover:bg-pink-400 hover:text-black text-[9px] font-mono font-bold text-pink-300 active:scale-95 transition">
+                DROP
+              </button>
+              <button data-pad="kaleido" class="vj-pad py-1.5 rounded-md bg-purple-500/20 border border-purple-400/60 hover:bg-purple-400 hover:text-black text-[9px] font-mono font-bold text-purple-300 active:scale-95 transition">
+                SHIFT
+              </button>
+              <button data-pad="sparkle" class="vj-pad py-1.5 rounded-md bg-emerald-500/20 border border-emerald-400/60 hover:bg-emerald-400 hover:text-black text-[9px] font-mono font-bold text-emerald-300 active:scale-95 transition">
+                BURST
+              </button>
+            </div>
+          </div>
+
+          <div class="col-span-3 sm:col-span-4 bg-black/60 rounded-xl p-2 border border-slate-800 flex items-center justify-between gap-2 relative">
+            <div class="mx-auto flex flex-col items-center">
+              <div id="rightJogHousing" class="relative w-14 h-14 sm:w-20 sm:h-20 rounded-full p-1 bg-gradient-to-tr from-studio-magenta/60 to-studio-cyan/50 shadow-lg transition-shadow">
+                <div id="rightJogWheel" class="w-full h-full rounded-full vinyl-disc border border-slate-700 flex items-center justify-center relative" title="Drag & spin to DJ scratch & filter sweep">
+                  <div class="absolute top-1 left-1/2 -translate-x-1/2 w-1 h-3 sm:h-4 bg-studio-magenta rounded-full shadow-[0_0_6px_#ff007f]"></div>
+                  <div class="w-3 h-3 rounded-full bg-studio-magenta shadow-[0_0_8px_#ff007f]"></div>
+                </div>
+              </div>
+              <span id="rightDeckStatus" class="text-[8px] font-mono text-studio-magenta/80 tracking-wider mt-1 uppercase">FX DISC R</span>
+            </div>
+            <div class="hidden sm:flex flex-col gap-1.5">
+              <button data-pad="kaleido" class="vj-pad w-7 h-7 rounded-md bg-studio-purple/20 border border-studio-purple/60 hover:bg-studio-purple hover:text-black text-[9px] font-mono font-bold text-purple-300 transition flex items-center justify-center" title="Morph Symmetry">SYM</button>
+              <button data-pad="sparkle" class="vj-pad w-7 h-7 rounded-md bg-studio-lime/20 border border-studio-lime/60 hover:bg-studio-lime hover:text-black text-[9px] font-mono font-bold text-studio-lime transition flex items-center justify-center" title="Particle Burst">SPK</button>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
 
-    <div class="hint-text" id="hint-text">💡 Tip: Drag the square face cutout directly on the preview to align it!</div>
   </main>
 
-  <!-- Hidden Video Element for MP4/WebM Playback -->
+  <audio id="audioPlayer" loop crossorigin="anonymous"></audio>
+
   <video id="hidden-video" loop muted playsinline crossorigin="anonymous" style="display:none;"></video>
 
-  <!-- ES Module Script importing gifuct-js for accurate frame-by-frame GIF decoding -->
-  <script type="module">
-    import { parseGIF, decompressFrames } from 'https://esm.sh/gifuct-js@2.1.2';
-
-    // ================= 1. PRESET CATEGORIES & GIF CYCLING LISTS =================
-    const presetCategories = {
-      creatures: {
-        name: "Creatures",
-        gifs: [
-          "assets/meow-zhe.gif",
-          "assets/gnarp-cat-alien-cat-meme.gif",
-          "assets/gnarp-y-gnarpy.gif",
-          "assets/aliendog-dancing-dog.gif",
-          "assets/iora-hotaru-iora.gif"
-        ]
-      },
-      alien: {
-        name: "Alien",
-        gifs: [
-          "assets/steam-green-alien.gif",
-          "assets/alien-pls.gif",
-          "assets/alienpls3-alienpls.gif"
-        ]
-      },
-      dancingMan: {
-        name: "Dancing Man",
-        gifs: [
-          "assets/alex-horne-little-alex-horne.gif",
-          "assets/funky-dancing.gif",
-          "assets/andrew-tate-dance.gif",
-          "assets/dance-moves.gif"
-        ]
-      },
-      animeGirl: {
-        name: "Anime Girl",
-        gifs: [
-          "magical-girl-madoka.gif",
-          "osaka-dance.gif",
-          "rt97k.gif"
-        ]
-      }
-    };
-
-    const defaultFaceSVG = "data:image/svg+xml;utf8," + encodeURIComponent(`
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-        <rect width="100" height="100" fill="#ffeb3b"/>
-        <circle cx="35" cy="40" r="8" fill="#111"/>
-        <circle cx="65" cy="40" r="8" fill="#111"/>
-        <path d="M28 62 Q50 85 72 62" stroke="#111" stroke-width="7" stroke-linecap="round" fill="none"/>
-      </svg>
-    `);
-
-    // ================= 2. DOM ELEMENTS & STATE =================
-    const presetStageEl = document.getElementById('preset-stage');
-    const trackerStageEl = document.getElementById('tracker-stage');
-    const charBodyEl = document.getElementById('character-body');
-    const faceOverlayEl = document.getElementById('face-overlay');
-    const faceImgEl = document.getElementById('face-img');
-    const trackerCanvas = document.getElementById('tracker-canvas');
-    const trackerCtx = trackerCanvas.getContext('2d');
-    const hiddenVideo = document.getElementById('hidden-video');
-
-    const processingOverlay = document.getElementById('processing-overlay');
-    const processingText = document.getElementById('processing-text');
-    const processingSub = document.getElementById('processing-sub');
-
-    const currentLabelEl = document.getElementById('current-label');
-    const fpsLabelEl = document.getElementById('fps-label');
-    const hintTextEl = document.getElementById('hint-text');
-
-    // Sliders
-    const sizeSlider = document.getElementById('size-slider');
-    const sizeVal = document.getElementById('size-val');
-    const speedSlider = document.getElementById('speed-slider');
-    const speedVal = document.getElementById('speed-val');
-    const offsetXSlider = document.getElementById('offset-x-slider');
-    const offsetXVal = document.getElementById('offset-x-val');
-    const offsetYSlider = document.getElementById('offset-y-slider');
-    const offsetYVal = document.getElementById('offset-y-val');
-
-    // App State
-    let appMode = 'preset'; // 'preset' | 'gif' | 'video' | 'static'
-    let activeCategoryKey = 'creatures';
-    let categoryIndices = {
-      creatures: 0,
-      alien: 0,
-      dancingMan: 0,
-      animeGirl: 0
-    };
-
-    let userFaceImage = new Image();
-    userFaceImage.src = defaultFaceSVG;
-    faceImgEl.src = defaultFaceSVG;
-
-    let faceScale = 1.0;
-    let manualOffsetX = 0;
-    let manualOffsetY = 0;
-
-    // GIF Playback & Tracking State
-    let gifFrames = [];
-    let gifTrackPoints = [];
-    let gifWidth = 400;
-    let gifHeight = 400;
-    let currentFrameIndex = 0;
-    let lastFrameTimestamp = 0;
-    let frameAccumulator = 0;
-    let animFrameId = null;
-
-    // Video / Static Image Tracking State
-    let currentVideoTrack = { x: 200, y: 120, radius: 48, angle: 0 };
-    let videoDetectPending = false;
-    let templatePatch = null;
-
-    // BlazeFace AI Model Instance
-    let blazefaceModel = null;
-    async function loadAIModel() {
-      if (blazefaceModel) return blazefaceModel;
-      if (window.blazeface) {
-        try {
-          blazefaceModel = await window.blazeface.load();
-        } catch (err) {
-          console.warn("BlazeFace model load fallback to 2D motion tracker:", err);
-        }
-      }
-      return blazefaceModel;
-    }
-    loadAIModel();
-
-    // ================= 3. MODE A: PRESET CATEGORIES & GIF CYCLING =================
-    window.selectPresetCategory = async function(key, btnElement) {
-      stopCustomLoop();
-      appMode = 'preset';
-      activeCategoryKey = key;
-
-      document.querySelectorAll('.char-btn').forEach(btn => btn.classList.remove('active'));
-      if (btnElement) btnElement.classList.add('active');
-
-      const cat = presetCategories[key];
-      const gifUrl = cat.gifs[categoryIndices[key]];
-      
-      // Advance index for next click in circular order
-      categoryIndices[key] = (categoryIndices[key] + 1) % cat.gifs.length;
-
-      presetStageEl.style.display = 'none';
-      trackerStageEl.style.display = 'block';
-      fpsLabelEl.style.display = 'block';
-
-      document.getElementById('speed-row').style.display = 'none';
-      document.getElementById('offset-x-row').style.display = 'flex';
-      document.getElementById('offset-y-row').style.display = 'flex';
-
-      manualOffsetX = 0;
-      manualOffsetY = 0;
-      offsetXSlider.value = 0;
-      offsetYSlider.value = 0;
-      offsetXVal.textContent = '0px';
-      offsetYVal.textContent = '0px';
-      faceScale = 1.0;
-      sizeSlider.value = 1.0;
-      sizeVal.textContent = '1.0x';
-
-      currentLabelEl.textContent = `${cat.name} (${gifUrl.split('/').pop()})`;
-      hintTextEl.textContent = "💡 Tip: Drag on the canvas to fine-tune offset!";
-
-      await loadAndProcessPresetGif(gifUrl);
-    };
-
-    async function loadAndProcessPresetGif(url) {
-      showProcessing("Loading GIF Frames...", "Extracting native animation frames");
-      try {
-        const response = await fetch(url);
-        const arrayBuffer = await response.arrayBuffer();
-        const gif = parseGIF(arrayBuffer);
-        const rawFrames = decompressFrames(gif, true);
-
-        if (!rawFrames || rawFrames.length === 0) {
-          throw new Error("No frames found in GIF.");
-        }
-
-        gifWidth = gif.lsd.width;
-        gifHeight = gif.lsd.height;
-        trackerCanvas.width = gifWidth;
-        trackerCanvas.height = gifHeight;
-
-        const compCanvas = document.createElement('canvas');
-        compCanvas.width = gifWidth;
-        compCanvas.height = gifHeight;
-        const compCtx = compCanvas.getContext('2d', { willReadFrequently: true });
-
-        const patchCanvas = document.createElement('canvas');
-        const patchCtx = patchCanvas.getContext('2d');
-
-        gifFrames = [];
-        let previousImageData = null;
-
-        for (let i = 0; i < rawFrames.length; i++) {
-          const frame = rawFrames[i];
-          const { dims, patch, disposalType, delay } = frame;
-
-          if (disposalType === 3) {
-            previousImageData = compCtx.getImageData(0, 0, gifWidth, gifHeight);
-          }
-
-          patchCanvas.width = dims.width;
-          patchCanvas.height = dims.height;
-          const patchImgData = new ImageData(new Uint8ClampedArray(patch), dims.width, dims.height);
-          patchCtx.putImageData(patchImgData, 0, 0);
-
-          compCtx.drawImage(patchCanvas, dims.left, dims.top);
-
-          const fullFrameData = compCtx.getImageData(0, 0, gifWidth, gifHeight);
-          const bitmap = await createImageBitmap(compCanvas);
-          gifFrames.push({
-            bitmap,
-            imageData: fullFrameData,
-            delay: Math.max(delay || 50, 20)
-          });
-
-          if (disposalType === 2) {
-            compCtx.clearRect(dims.left, dims.top, dims.width, dims.height);
-          } else if (disposalType === 3 && previousImageData) {
-            compCtx.putImageData(previousImageData, 0, 0);
-          }
-        }
-
-        fpsLabelEl.textContent = `${gifFrames.length} Frames • ${gifWidth}×${gifHeight}`;
-        await trackAllGifFrames();
-
-        hideProcessing();
-        currentFrameIndex = 0;
-        lastFrameTimestamp = performance.now();
-        frameAccumulator = 0;
-        startGifLoop();
-      } catch (err) {
-        console.error("Preset GIF load error:", err);
-        hideProcessing();
-        hintTextEl.textContent = "⚠️ Could not load GIF asset. Please check file path or upload custom GIF.";
-      }
-    }
-
-    // Initialize default preset category
-    selectPresetCategory('creatures', document.querySelector('.char-btn.active'));
-
-    // ================= 4. UPLOAD HANDLERS (GIF, VIDEO, IMAGE, FACE) =================
-    const gifUploadInput = document.getElementById('gif-upload');
-    const faceUploadInput = document.getElementById('face-upload');
-
-    gifUploadInput.addEventListener('change', (e) => {
-      if (e.target.files[0]) handleCustomMediaFile(e.target.files[0]);
-    });
-
-    faceUploadInput.addEventListener('change', (e) => {
-      if (e.target.files[0]) handleFacePhotoFile(e.target.files[0]);
-    });
-
-    setupDropzone(document.getElementById('gif-dropzone'), handleCustomMediaFile);
-    setupDropzone(document.getElementById('face-dropzone'), handleFacePhotoFile);
-
-    function setupDropzone(el, callback) {
-      el.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        el.classList.add('dragover');
-      });
-      el.addEventListener('dragleave', () => el.classList.remove('dragover'));
-      el.addEventListener('drop', (e) => {
-        e.preventDefault();
-        el.classList.remove('dragover');
-        if (e.dataTransfer.files[0]) callback(e.dataTransfer.files[0]);
-      });
-    }
-
-    function handleFacePhotoFile(file) {
-      const url = URL.createObjectURL(file);
-      faceImgEl.src = url;
-      const img = new Image();
-      img.onload = () => {
-        userFaceImage = img;
-      };
-      img.src = url;
-      document.getElementById('face-filename').textContent = `Loaded: ${file.name}`;
-    }
-
-    async function handleCustomMediaFile(file) {
-      stopCustomLoop();
-      document.querySelectorAll('.char-btn').forEach(btn => btn.classList.remove('active'));
-      document.getElementById('gif-filename').textContent = `Loaded: ${file.name}`;
-
-      presetStageEl.style.display = 'none';
-      trackerStageEl.style.display = 'block';
-      fpsLabelEl.style.display = 'block';
-
-      document.getElementById('speed-row').style.display = 'none';
-      document.getElementById('offset-x-row').style.display = 'flex';
-      document.getElementById('offset-y-row').style.display = 'flex';
-
-      manualOffsetX = 0;
-      manualOffsetY = 0;
-      offsetXSlider.value = 0;
-      offsetYSlider.value = 0;
-      offsetXVal.textContent = '0px';
-      offsetYVal.textContent = '0px';
-      faceScale = 1.0;
-      sizeSlider.value = 1.0;
-      sizeVal.textContent = '1.0x';
-
-      hintTextEl.textContent = "💡 Tip: Drag on the canvas to fine-tune offset!";
-
-      const fileType = file.type.toLowerCase();
-      const fileName = file.name.toLowerCase();
-
-      if (fileType === 'image/gif' || fileName.endsWith('.gif')) {
-        await processAnimatedGIF(file);
-      } else if (fileType.startsWith('video/')) {
-        await processVideoFile(file);
-      } else {
-        await processStaticImageFile(file);
-      }
-    }
-
-    // ================= 5. FRAME-BY-FRAME GIF DECODER & TRACKER =================
-    async function processAnimatedGIF(file) {
-      appMode = 'gif';
-      currentLabelEl.textContent = `GIF Motion Track: ${file.name}`;
-      showProcessing("Decoding GIF Frames...", "Extracting native animation frames");
-
-      try {
-        const arrayBuffer = await file.arrayBuffer();
-        const gif = parseGIF(arrayBuffer);
-        const rawFrames = decompressFrames(gif, true);
-
-        if (!rawFrames || rawFrames.length === 0) {
-          throw new Error("No frames found in GIF.");
-        }
-
-        gifWidth = gif.lsd.width;
-        gifHeight = gif.lsd.height;
-        trackerCanvas.width = gifWidth;
-        trackerCanvas.height = gifHeight;
-
-        const compCanvas = document.createElement('canvas');
-        compCanvas.width = gifWidth;
-        compCanvas.height = gifHeight;
-        const compCtx = compCanvas.getContext('2d', { willReadFrequently: true });
-
-        const patchCanvas = document.createElement('canvas');
-        const patchCtx = patchCanvas.getContext('2d');
-
-        gifFrames = [];
-        let previousImageData = null;
-
-        for (let i = 0; i < rawFrames.length; i++) {
-          const frame = rawFrames[i];
-          const { dims, patch, disposalType, delay } = frame;
-
-          if (disposalType === 3) {
-            previousImageData = compCtx.getImageData(0, 0, gifWidth, gifHeight);
-          }
-
-          patchCanvas.width = dims.width;
-          patchCanvas.height = dims.height;
-          const patchImgData = new ImageData(new Uint8ClampedArray(patch), dims.width, dims.height);
-          patchCtx.putImageData(patchImgData, 0, 0);
-
-          compCtx.drawImage(patchCanvas, dims.left, dims.top);
-
-          const fullFrameData = compCtx.getImageData(0, 0, gifWidth, gifHeight);
-          const bitmap = await createImageBitmap(compCanvas);
-          gifFrames.push({
-            bitmap,
-            imageData: fullFrameData,
-            delay: Math.max(delay || 50, 20)
-          });
-
-          if (disposalType === 2) {
-            compCtx.clearRect(dims.left, dims.top, dims.width, dims.height);
-          } else if (disposalType === 3 && previousImageData) {
-            compCtx.putImageData(previousImageData, 0, 0);
-          }
-        }
-
-        fpsLabelEl.textContent = `${gifFrames.length} Frames • ${gifWidth}×${gifHeight}`;
-        await trackAllGifFrames();
-
-        hideProcessing();
-        currentFrameIndex = 0;
-        lastFrameTimestamp = performance.now();
-        frameAccumulator = 0;
-        startGifLoop();
-      } catch (err) {
-        console.error("GIF decode error:", err);
-        hideProcessing();
-        await processStaticImageFile(file);
-      }
-    }
-
-    async function trackAllGifFrames(userAnchorPoint = null) {
-      showProcessing("Tracking Character Head...", "Analyzing movement across " + gifFrames.length + " frames");
-      
-      gifTrackPoints = [];
-      const defaultRadius = Math.max(46, Math.min(gifWidth, gifHeight) * 0.20);
-      let anchor = userAnchorPoint || estimateInitialHeadCenter(gifFrames);
-      let patchSize = Math.max(16, Math.round(Math.min(gifWidth, gifHeight) * 0.14));
-      let currentTemplate = extractColorPatch(gifFrames[0].imageData, anchor.x, anchor.y, patchSize);
-
-      gifTrackPoints[0] = {
-        x: anchor.x,
-        y: anchor.y,
-        radius: defaultRadius,
-        angle: 0,
-        source: 'motion'
-      };
-
-      let prevPos = { x: anchor.x, y: anchor.y };
-      const searchRadius = Math.max(28, Math.round(Math.min(gifWidth, gifHeight) * 0.18));
-
-      for (let i = 1; i < gifFrames.length; i++) {
-        const match = findBestPatchMatch(
-          gifFrames[i].imageData,
-          currentTemplate,
-          patchSize,
-          prevPos.x,
-          prevPos.y,
-          searchRadius
-        );
-
-        const dx = match.x - prevPos.x;
-        const tiltAngle = Math.max(-0.28, Math.min(0.28, dx * 0.015));
-
-        gifTrackPoints[i] = {
-          x: match.x,
-          y: match.y,
-          radius: defaultRadius,
-          angle: tiltAngle,
-          source: 'motion'
-        };
-
-        prevPos = { x: match.x, y: match.y };
-      }
-
-      smoothTrackArray(gifTrackPoints);
-    }
-
-    function smoothTrackArray(points) {
-      if (points.length < 3) return;
-      const copy = points.map(p => ({ ...p }));
-      for (let i = 0; i < points.length; i++) {
-        const prev = copy[(i - 1 + copy.length) % copy.length];
-        const curr = copy[i];
-        const next = copy[(i + 1) % copy.length];
-        points[i].x = prev.x * 0.2 + curr.x * 0.6 + next.x * 0.2;
-        points[i].y = prev.y * 0.2 + curr.y * 0.6 + next.y * 0.2;
-        points[i].angle = prev.angle * 0.2 + curr.angle * 0.6 + next.angle * 0.2;
-      }
-    }
-
-    function estimateInitialHeadCenter(frames) {
-      if (frames.length < 2) {
-        return { x: gifWidth * 0.5, y: gifHeight * 0.3 };
-      }
-      const d0 = frames[0].imageData.data;
-      const d1 = frames[Math.min(2, frames.length - 1)].imageData.data;
-      let sumX = 0, sumY = 0, totalWeight = 0;
-
-      for (let y = 0; y < gifHeight; y += 4) {
-        for (let x = 0; x < gifWidth; x += 4) {
-          const idx = (y * gifWidth + x) * 4;
-          const diff = Math.abs(d0[idx] - d1[idx]) + Math.abs(d0[idx + 1] - d1[idx + 1]) + Math.abs(d0[idx + 2] - d1[idx + 2]);
-          if (diff > 35) {
-            const verticalBias = y < gifHeight * 0.65 ? 1.8 : 0.6;
-            const w = diff * verticalBias;
-            sumX += x * w;
-            sumY += y * w;
-            totalWeight += w;
-          }
-        }
-      }
-
-      if (totalWeight > 0) {
-        return {
-          x: sumX / totalWeight,
-          y: Math.max(gifHeight * 0.16, (sumY / totalWeight) * 0.85)
-        };
-      }
-      return { x: gifWidth * 0.5, y: gifHeight * 0.3 };
-    }
-
-    function extractColorPatch(imageData, cx, cy, size) {
-      const half = Math.floor(size / 2);
-      const patch = new Float32Array(size * size * 3);
-      const { width, height, data } = imageData;
-      let ptr = 0;
-
-      for (let dy = -half; dy < -half + size; dy++) {
-        const sy = Math.max(0, Math.min(height - 1, Math.round(cy + dy)));
-        for (let dx = -half; dx < -half + size; dx++) {
-          const sx = Math.max(0, Math.min(width - 1, Math.round(cx + dx)));
-          const idx = (sy * width + sx) * 4;
-          patch[ptr++] = data[idx];
-          patch[ptr++] = data[idx + 1];
-          patch[ptr++] = data[idx + 2];
-        }
-      }
-      return patch;
-    }
-
-    function findBestPatchMatch(imageData, template, size, startX, startY, searchRadius) {
-      const { width, height, data } = imageData;
-      const half = Math.floor(size / 2);
-      let bestScore = Infinity;
-      let bestX = startX;
-      let bestY = startY;
-
-      const minX = Math.max(half, Math.round(startX - searchRadius));
-      const maxX = Math.min(width - half - 1, Math.round(startX + searchRadius));
-      const minY = Math.max(half, Math.round(startY - searchRadius));
-      const maxY = Math.min(height - half - 1, Math.round(startY + searchRadius));
-
-      for (let cy = minY; cy <= maxY; cy += 4) {
-        for (let cx = minX; cx <= maxX; cx += 4) {
-          let score = 0;
-          let ptr = 0;
-
-          for (let dy = -half; dy < -half + size; dy += 4) {
-            const rowOffset = (cy + dy) * width;
-            for (let dx = -half; dx < -half + size; dx += 4) {
-              const idx = (rowOffset + (cx + dx)) * 4;
-              const tIdx = ((dy + half) * size + (dx + half)) * 3;
-              score +=
-                Math.abs(data[idx] - template[tIdx]) +
-                Math.abs(data[idx + 1] - template[tIdx + 1]) +
-                Math.abs(data[idx + 2] - template[tIdx + 2]);
-            }
-          }
-
-          const distPenalty = ((cx - startX) ** 2 + (cy - startY) ** 2) * 0.25;
-          score += distPenalty;
-
-          if (score < bestScore) {
-            bestScore = score;
-            bestX = cx;
-            bestY = cy;
-          }
-        }
-      }
-
-      return { x: bestX, y: bestY };
-    }
-
-    function startGifLoop() {
-      function render(now) {
-        if (appMode !== 'gif' && appMode !== 'preset') return;
-        if (gifFrames.length === 0) return;
-
-        const dt = Math.min(now - lastFrameTimestamp, 250);
-        lastFrameTimestamp = now;
-        frameAccumulator += dt;
-
-        let frame = gifFrames[currentFrameIndex];
-        while (frameAccumulator >= frame.delay) {
-          frameAccumulator -= frame.delay;
-          currentFrameIndex = (currentFrameIndex + 1) % gifFrames.length;
-          frame = gifFrames[currentFrameIndex];
-        }
-
-        const track = gifTrackPoints[currentFrameIndex] || {
-          x: gifWidth / 2,
-          y: gifHeight * 0.3,
-          radius: 48,
-          angle: 0
-        };
-
-        trackerCtx.clearRect(0, 0, gifWidth, gifHeight);
-        trackerCtx.drawImage(frame.bitmap, 0, 0);
-
-        drawTrackedFace(
-          trackerCtx,
-          track.x + manualOffsetX,
-          track.y + manualOffsetY,
-          track.radius * faceScale,
-          track.angle
-        );
-
-        animFrameId = requestAnimationFrame(render);
-      }
-      animFrameId = requestAnimationFrame(render);
-    }
-
-    // ================= 6. REAL-TIME VIDEO (MP4/WEBM) TRACKING =================
-    async function processVideoFile(file) {
-      appMode = 'video';
-      currentLabelEl.textContent = `Video Face Track: ${file.name}`;
-      showProcessing("Loading Video Stream...", "Starting real-time motion face tracker");
-
-      const url = URL.createObjectURL(file);
-      hiddenVideo.src = url;
-      await new Promise((resolve) => {
-        hiddenVideo.onloadedmetadata = resolve;
-      });
-
-      gifWidth = hiddenVideo.videoWidth || 480;
-      gifHeight = hiddenVideo.videoHeight || 480;
-      trackerCanvas.width = gifWidth;
-      trackerCanvas.height = gifHeight;
-
-      currentVideoTrack = {
-        x: gifWidth * 0.5,
-        y: gifHeight * 0.3,
-        radius: Math.max(46, Math.min(gifWidth, gifHeight) * 0.20),
-        angle: 0
-      };
-      templatePatch = null;
-
-      await hiddenVideo.play();
-      hideProcessing();
-      fpsLabelEl.textContent = `Live Video • ${gifWidth}×${gifHeight}`;
-
-      function renderVideoFrame() {
-        if (appMode !== 'video') return;
-
-        trackerCtx.clearRect(0, 0, gifWidth, gifHeight);
-        trackerCtx.drawImage(hiddenVideo, 0, 0, gifWidth, gifHeight);
-
-        if (!videoDetectPending && hiddenVideo.readyState >= 2) {
-          videoDetectPending = true;
-          updateVideoTrack().finally(() => {
-            videoDetectPending = false;
-          });
-        }
-
-        drawTrackedFace(
-          trackerCtx,
-          currentVideoTrack.x + manualOffsetX,
-          currentVideoTrack.y + manualOffsetY,
-          currentVideoTrack.radius * faceScale,
-          currentVideoTrack.angle
-        );
-
-        animFrameId = requestAnimationFrame(renderVideoFrame);
-      }
-      animFrameId = requestAnimationFrame(renderVideoFrame);
-    }
-
-    async function updateVideoTrack() {
-      const frameData = trackerCtx.getImageData(0, 0, gifWidth, gifHeight);
-      if (!templatePatch) {
-        const pSize = Math.max(18, Math.round(Math.min(gifWidth, gifHeight) * 0.14));
-        templatePatch = {
-          data: extractColorPatch(frameData, currentVideoTrack.x, currentVideoTrack.y, pSize),
-          size: pSize
-        };
-      }
-
-      const searchRadius = Math.max(32, Math.round(Math.min(gifWidth, gifHeight) * 0.16));
-      const match = findBestPatchMatch(
-        frameData,
-        templatePatch.data,
-        templatePatch.size,
-        currentVideoTrack.x,
-        currentVideoTrack.y,
-        searchRadius
-      );
-      const dx = match.x - currentVideoTrack.x;
-      currentVideoTrack.x = currentVideoTrack.x * 0.3 + match.x * 0.7;
-      currentVideoTrack.y = currentVideoTrack.y * 0.3 + match.y * 0.7;
-      currentVideoTrack.angle = Math.max(-0.25, Math.min(0.25, dx * 0.015));
-    }
-
-    // ================= 7. STATIC IMAGE FALLBACK =================
-    async function processStaticImageFile(file) {
-      appMode = 'static';
-      currentLabelEl.textContent = `Custom Image: ${file.name}`;
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      await new Promise((res) => {
-        img.onload = res;
-        img.src = url;
-      });
-
-      gifWidth = img.naturalWidth || 400;
-      gifHeight = img.naturalHeight || 400;
-      trackerCanvas.width = gifWidth;
-      trackerCanvas.height = gifHeight;
-
-      currentVideoTrack = {
-        x: gifWidth * 0.5,
-        y: gifHeight * 0.3,
-        radius: Math.max(46, Math.min(gifWidth, gifHeight) * 0.20),
-        angle: 0
-      };
-
-      function renderStatic() {
-        if (appMode !== 'static') return;
-        trackerCtx.clearRect(0, 0, gifWidth, gifHeight);
-        trackerCtx.drawImage(img, 0, 0, gifWidth, gifHeight);
-        drawTrackedFace(
-          trackerCtx,
-          currentVideoTrack.x + manualOffsetX,
-          currentVideoTrack.y + manualOffsetY,
-          currentVideoTrack.radius * faceScale,
-          currentVideoTrack.angle
-        );
-        animFrameId = requestAnimationFrame(renderStatic);
-      }
-      animFrameId = requestAnimationFrame(renderStatic);
-    }
-
-    // ================= 8. DRAW ROUNDED-SQUARE TRACKED FACE ON CANVAS =================
-    function traceRoundedRect(ctx, x, y, width, height, radius) {
-      const r = Math.min(radius, width / 2, height / 2);
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + width - r, y);
-      ctx.quadraticCurveTo(x + width, y, x + width, y + r);
-      ctx.lineTo(x + width, y + height - r);
-      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-      ctx.lineTo(x + r, y + height);
-      ctx.quadraticCurveTo(x, y + height, x, y + height - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-    }
-
-    function drawTrackedFace(ctx, x, y, radius, angle = 0) {
-      if (!userFaceImage || !userFaceImage.complete) return;
-      const safeRadius = Math.max(16, radius);
-      const boxSize = safeRadius * 2;
-      const cornerRadius = Math.max(8, boxSize * 0.12);
-
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(angle);
-
-      traceRoundedRect(ctx, -safeRadius, -safeRadius, boxSize, boxSize, cornerRadius);
-      ctx.clip();
-
-      const iw = userFaceImage.naturalWidth || 100;
-      const ih = userFaceImage.naturalHeight || 100;
-      const scale = Math.max(boxSize / iw, boxSize / ih);
-      const drawW = iw * scale;
-      const drawH = ih * scale;
-      ctx.drawImage(userFaceImage, -drawW / 2, -drawH / 2, drawW, drawH);
-
-      ctx.restore();
-
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(angle);
-      traceRoundedRect(ctx, -safeRadius, -safeRadius, boxSize, boxSize, cornerRadius);
-      ctx.lineWidth = Math.max(2.5, safeRadius * 0.06);
-      ctx.strokeStyle = '#ffffff';
-      ctx.shadowColor = 'rgba(255, 0, 127, 0.85)';
-      ctx.shadowBlur = 12;
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // ================= 9. INTERACTIVE CANVAS DRAG OFFSET =================
-    let isCanvasDragging = false;
-    let dragStartX = 0;
-    let dragStartY = 0;
-    let startOffsetX = 0;
-    let startOffsetY = 0;
-
-    trackerCanvas.addEventListener('pointerdown', (e) => {
-      const rect = trackerCanvas.getBoundingClientRect();
-      const scaleX = trackerCanvas.width / rect.width;
-      const scaleY = trackerCanvas.height / rect.height;
-      const canvasX = (e.clientX - rect.left) * scaleX;
-      const canvasY = (e.clientY - rect.top) * scaleY;
-
-      isCanvasDragging = true;
-      dragStartX = canvasX;
-      dragStartY = canvasY;
-      startOffsetX = manualOffsetX;
-      startOffsetY = manualOffsetY;
-      trackerCanvas.setPointerCapture(e.pointerId);
-    });
-
-    trackerCanvas.addEventListener('pointermove', (e) => {
-      if (!isCanvasDragging) return;
-      const rect = trackerCanvas.getBoundingClientRect();
-      const scaleX = trackerCanvas.width / rect.width;
-      const scaleY = trackerCanvas.height / rect.height;
-      const canvasX = (e.clientX - rect.left) * scaleX;
-      const canvasY = (e.clientY - rect.top) * scaleY;
-
-      manualOffsetX = Math.max(-150, Math.min(150, Math.round(startOffsetX + (canvasX - dragStartX))));
-      manualOffsetY = Math.max(-150, Math.min(150, Math.round(startOffsetY + (canvasY - dragStartY))));
-
-      offsetXSlider.value = manualOffsetX;
-      offsetYSlider.value = manualOffsetY;
-      offsetXVal.textContent = manualOffsetX + 'px';
-      offsetYVal.textContent = manualOffsetY + 'px';
-    });
-
-    trackerCanvas.addEventListener('pointerup', (e) => {
-      if (isCanvasDragging) {
-        isCanvasDragging = false;
-        trackerCanvas.releasePointerCapture(e.pointerId);
-      }
-    });
-
-    // ================= 10. SLIDER LISTENERS =================
-    sizeSlider.addEventListener('input', (e) => {
-      faceScale = parseFloat(e.target.value);
-      sizeVal.textContent = faceScale.toFixed(2).replace(/\.00$/, '.0') + 'x';
-    });
-
-    offsetXSlider.addEventListener('input', (e) => {
-      manualOffsetX = parseInt(e.target.value, 10);
-      offsetXVal.textContent = manualOffsetX + 'px';
-    });
-
-    offsetYSlider.addEventListener('input', (e) => {
-      manualOffsetY = parseInt(e.target.value, 10);
-      offsetYVal.textContent = manualOffsetY + 'px';
-    });
-
-    // ================= 11. ANIMATED MEME TEXT ENGINE =================
-    const memeTextInput = document.getElementById('meme-text-input');
-    const charCounterEl = document.getElementById('char-counter');
-    const memeBannerWrapper = document.getElementById('meme-banner-wrapper');
-    const memeTextDisplay = document.getElementById('meme-text-display');
-    const textSizeSlider = document.getElementById('text-size-slider');
-    const textSizeVal = document.getElementById('text-size-val');
-    const btnTogglePin = document.getElementById('btn-toggle-pin');
-
-    let currentTextStyle = 'rainbow';
-    let currentTextAnim = 'wave';
-    let isTextFloating = false;
-
-    function renderMemeText(rawText) {
-      const text = rawText.slice(0, 120);
-      charCounterEl.textContent = `${text.length} / 120`;
-
-      memeTextDisplay.innerHTML = '';
-      if (!text.trim()) {
-        memeBannerWrapper.style.display = 'none';
-        return;
-      }
-
-      memeBannerWrapper.style.display = 'flex';
-      const chars = Array.from(text);
-      chars.forEach((ch, idx) => {
-        const span = document.createElement('span');
-        span.className = 'meme-char';
-        span.style.setProperty('--i', idx);
-        span.textContent = ch === ' ' ? '\u00A0' : ch;
-        memeTextDisplay.appendChild(span);
-      });
-    }
-
-    memeTextInput.addEventListener('input', (e) => {
-      renderMemeText(e.target.value);
-    });
-
-    window.applyPresetText = function(phrase) {
-      memeTextInput.value = phrase;
-      renderMemeText(phrase);
-    };
-
-    window.setTextAnimation = function(animKey, btnEl) {
-      currentTextAnim = animKey;
-      document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('active'));
-      if (btnEl) btnEl.classList.add('active');
-      updateTextClasses();
-    };
-
-    window.setTextStyle = function(styleKey, btnEl) {
-      currentTextStyle = styleKey;
-      document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
-      if (btnEl) btnEl.classList.add('active');
-      updateTextClasses();
-    };
-
-    function updateTextClasses() {
-      memeTextDisplay.className = `style-${currentTextStyle} anim-${currentTextAnim}`;
-    }
-
-    textSizeSlider.addEventListener('input', (e) => {
-      const px = e.target.value + 'px';
-      textSizeVal.textContent = px;
-      memeTextDisplay.style.fontSize = px;
-    });
-
-    window.toggleTextPlacement = function() {
-      isTextFloating = !isTextFloating;
-      memeBannerWrapper.classList.toggle('floating-mode', isTextFloating);
-      if (!isTextFloating) {
-        memeBannerWrapper.style.left = '';
-        memeBannerWrapper.style.top = '';
-        btnTogglePin.textContent = '📌 Pinned Above GIF';
-      } else {
-        btnTogglePin.textContent = '🖐️ Free Floating';
-      }
-    };
-
-    window.resetTextPosition = function() {
-      isTextFloating = false;
-      memeBannerWrapper.classList.remove('floating-mode');
-      memeBannerWrapper.style.left = '';
-      memeBannerWrapper.style.top = '';
-      btnTogglePin.textContent = '📌 Pinned Above GIF';
-    };
-
-    let isTextDragging = false;
-    let textStartX = 0;
-    let textStartY = 0;
-
-    memeBannerWrapper.addEventListener('pointerdown', (e) => {
-      if (!isTextFloating) {
-        const rect = memeBannerWrapper.getBoundingClientRect();
-        const parentRect = memeBannerWrapper.parentElement.getBoundingClientRect();
-        isTextFloating = true;
-        memeBannerWrapper.classList.add('floating-mode');
-        memeBannerWrapper.style.left = (rect.left - parentRect.left) + 'px';
-        memeBannerWrapper.style.top = (rect.top - parentRect.top) + 'px';
-        btnTogglePin.textContent = '🖐️ Free Floating';
-      }
-      isTextDragging = true;
-      textStartX = e.clientX - memeBannerWrapper.offsetLeft;
-      textStartY = e.clientY - memeBannerWrapper.offsetTop;
-      memeBannerWrapper.setPointerCapture(e.pointerId);
-    });
-
-    memeBannerWrapper.addEventListener('pointermove', (e) => {
-      if (!isTextDragging) return;
-      memeBannerWrapper.style.left = (e.clientX - textStartX) + 'px';
-      memeBannerWrapper.style.top = (e.clientY - textStartY) + 'px';
-    });
-
-    memeBannerWrapper.addEventListener('pointerup', (e) => {
-      if (isTextDragging) {
-        isTextDragging = false;
-        memeBannerWrapper.releasePointerCapture(e.pointerId);
-      }
-    });
-
-    renderMemeText(memeTextInput.value);
-
-    // ================= 12. HELPERS =================
-    function stopCustomLoop() {
-      if (animFrameId) {
-        cancelAnimationFrame(animFrameId);
-        animFrameId = null;
-      }
-      hiddenVideo.pause();
-      gifFrames.forEach(f => f.bitmap && f.bitmap.close && f.bitmap.close());
-      gifFrames = [];
-    }
-
-    function showProcessing(title, sub) {
-      processingText.textContent = title;
-      processingSub.textContent = sub;
-      processingOverlay.style.display = 'flex';
-    }
-
-    function hideProcessing() {
-      processingOverlay.style.display = 'none';
-    }
-  </script>
+  <script src="js/vj-studio.js"></script>
+  <script src="js/meme-studio.js"></script>
 </body>
 </html>
